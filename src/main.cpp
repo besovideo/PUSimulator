@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "BVCSP.h"
 
+
 #ifdef _MSC_VER
     #ifdef _WIN64
         #pragma comment(lib, "BVCSP_x64.lib")
@@ -9,9 +10,21 @@
     #endif // _WIN32
 #endif // _MSC_VER
 
+// 功能接口， 实现在各个功能模块cpp中。
+int Auth(); // 认证。
+
+// BVCSP日志回调
+void Log_Callback(int level, const char* log)
+{
+    printf("[BVCSP LOG] %s\n", log);
+}
+
 int main()
 {
+    BVCSP_SetLogCallback(Log_Callback, BVCU_LOG_LEVEL_INFO);
 	BVCSP_Initialize(1,0);
+
+    Auth();
 
 	while(1)
 	{
