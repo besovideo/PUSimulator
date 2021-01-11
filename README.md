@@ -13,16 +13,19 @@ include BVCSP库相关头文件 目录
 lib     BVCSP库相关dll/lib 目录
 src     模拟器源码 目录
 ```
+> 正常情况下，您只需根据情况修改src里的代码，不需要修改src中子目录里的代码，他们是对bvcsp接口的封装。
 
 ### 编译说明
+
 项目是Windows Visual Studio 2010项目，推荐使用Visual Studio 2010编译。  
 项目工程文件在build目录中。  
 
 ### 运行
-将lib目录下的dll文件拷贝到bin目录下。bin目录是生成/调试目录。  
-BVCSP依赖msvcr100.dll，msvcp100.dll。  
-PUSimulator.exe 是开放源码的，具体依赖的运行环境，需要根据您的开发环境确定。  
-可以直接双击bin目录下的run.bat运行。  
+
+1. 直接双击bin目录下的run.bat运行。  
+2. 手动将lib目录下的dll文件拷贝到bin目录下。 双击PUSimulator.exe 运行。
+> BVCSP依赖msvcr100.dll，msvcp100.dll。  
+PUSimulator.exe 是开放源码的，具体依赖的运行环境，需要根据您的开发环境确定。 
 
 ### 开发流程
 1. 设置日志回调接口。
@@ -48,3 +51,9 @@ BVCSP是收费库，需要认证后，才能上线服务器。认证需要联系
 * Auth接口中，填写您申请的开发者密钥信息（需要联系销售人员）。
 
 ### 设置设备信息，通道对象
+设备/通道信息设置在 loginout.cpp中，需要您做如下修改：
+* 修改config.cpp实现配置保存和读取功能（默认实现为windows下.ini配置文件）。
+* loginout.cpp中login接口里实现设备/通道信息注册!!!!
+
+### 上线/下线服务器
+loginout.cpp 中已经实现，可以根据需求修改。

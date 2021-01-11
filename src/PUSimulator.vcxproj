@@ -153,11 +153,23 @@
   <ItemGroup>
     <ClCompile Include="auth.cpp" />
     <ClCompile Include="auth\bv_auth.cpp" />
+    <ClCompile Include="base\command.cpp" />
+    <ClCompile Include="base\dialog.cpp" />
+    <ClCompile Include="base\filetransfer.cpp" />
+    <ClCompile Include="base\session.cpp" />
+    <ClCompile Include="config.cpp" />
+    <ClCompile Include="loginout.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="auth\bv_auth.h" />
+    <ClInclude Include="base\command.h" />
+    <ClInclude Include="base\dialog.h" />
+    <ClInclude Include="base\filetransfer.h" />
+    <ClInclude Include="base\session.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="main.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

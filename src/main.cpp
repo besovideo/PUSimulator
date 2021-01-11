@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "BVCSP.h"
+#include "main.h"
 
 
 #ifdef _MSC_VER
@@ -10,9 +11,6 @@
     #endif // _WIN32
 #endif // _MSC_VER
 
-// 功能接口， 实现在各个功能模块cpp中。
-int Auth(); // 认证。
-
 // BVCSP日志回调
 void Log_Callback(int level, const char* log)
 {
@@ -21,30 +19,33 @@ void Log_Callback(int level, const char* log)
 
 int main()
 {
+    // 初始化库
     BVCSP_SetLogCallback(Log_Callback, BVCU_LOG_LEVEL_INFO);
-	BVCSP_Initialize(1,0);
+    BVCSP_Initialize(1,0);
 
+    // 开始认证
     Auth();
 
-	while(1)
-	{
-		int iType;
-        printf("0:exit 1:login/logout  2:setInfo  3:setServer \r\n");
+    while(1)
+    {
+        int iType;
+        printf("0:exit  1:login  2:logout  3:setInfo  4:setServer \r\n");
         scanf("%d", &iType);
         if (iType == 0)
             break;
         if (iType == 1)
-		{
-            
-		}
+        {
+            Login(false);
+        }
         else if (iType == 2)
-		{
-		}
+        {
+            Logout();
+        }
         else if (iType == 3)
-		{
-		}
-	}
+        {
+        }
+    }
 
-	BVCSP_Finish();
-	return 0;
+    BVCSP_Finish();
+    return 0;
 }

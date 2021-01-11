@@ -1,0 +1,29 @@
+#pragma once
+
+// 默认配置
+#define DEFAULT_ID "PU_55AA0000"
+#define DEFAULT_NAME "PUSimulator G1B2"
+#define DEFAULT_SERVERIP "192.168.6.57"
+#define DEFAULT_SERVERPORT 9702
+#define DEFAULT_PROTOTYPE 0
+// 配置文件路径+名称
+#define CONFIG_FILE_PATH_NAME "./pusimulator.ini"
+
+struct PUConfig
+{
+    char ID[32];   // 设备ID号
+    char Name[64]; // 设备名称
+    int  lat;      // 维度，1/1000000
+    int  lng;      // 经度，1/1000000
+
+    char serverIP[64]; // 上线服务器地址
+    int  serverPort;   // 上线服务器端口
+    int  protoType;    // 协议类型：0 : UDP, 其它值：TCP。
+};
+
+// 加载配置信息，pConfig带回
+void LoadConfig(PUConfig* pConfig);
+
+// 保存配置信息。
+int  SetConfig(const PUConfig* pConfig);
+
