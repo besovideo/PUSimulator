@@ -51,7 +51,7 @@ public:
     void SetDevicePosition(int lat, int lng);  // 设备配置位置。
     // 注册通道信息
     int AddAVChannel(CAVChannelBase* pChannel); // 添加音视频通道
-    int AddGPSChannel(CGPSChannelBase* pChannel); // 添加GPS通道
+    int AddGPSChannel(CGPSChannelBase* pChannel); // 添加GPS通道, return 硬件号
     int AddTSPChannel(CTSPChannelBase* pChannel); // 添加串口通道
 
 protected:
@@ -70,5 +70,7 @@ protected:
     static BVCU_Result OnCommand(BVCSP_HSession hSession, BVCSP_Command* pCommand);
     static BVCU_Result OnNotify(BVCSP_HSession hSession, BVCSP_NotifyMsgContent* pData);
     static BVCU_Result OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, BVCSP_DialogParam* pParam);
+    static void OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_Event_DialogCmd* pParam);
+    static BVCU_Result afterDialogRecv(BVCSP_HDialog hDialog, BVCSP_Packet* pPacket);
 };
 

@@ -6,19 +6,24 @@
 #define DEFAULT_SERVERIP "192.168.6.57"
 #define DEFAULT_SERVERPORT 9702
 #define DEFAULT_PROTOTYPE 0
+#define DEFAULT_GPS_INTERVAL 5
 // 配置文件路径+名称
 #define CONFIG_FILE_PATH_NAME "./pusimulator.ini"
 
 struct PUConfig
 {
+    // info
     char ID[32];   // 设备ID号
     char Name[64]; // 设备名称
     int  lat;      // 维度，1/1000000
     int  lng;      // 经度，1/1000000
-
+    // server
     char serverIP[64]; // 上线服务器地址
     int  serverPort;   // 上线服务器端口
     int  protoType;    // 协议类型：0 : UDP, 其它值：TCP。
+    // gps
+    int  interval;     // 上报间隔：秒
+    char gpsName[64];  // GPS 通道名称
 };
 
 // 加载配置信息，pConfig带回

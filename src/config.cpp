@@ -31,6 +31,11 @@ void LoadConfig(PUConfig* pConfig)
     if (0 >= pConfig->serverPort || pConfig->serverPort >= 65535)
         pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = GetPrivateProfileIntA("server", "type", DEFAULT_PROTOTYPE, CONFIG_FILE_PATH_NAME);
+    // gps
+    pConfig->interval = GetPrivateProfileIntA("gps", "interval", DEFAULT_GPS_INTERVAL, CONFIG_FILE_PATH_NAME);
+    if (0 >= pConfig->interval || pConfig->interval >= 60*60)
+        pConfig->interval = DEFAULT_GPS_INTERVAL;
+    GetPrivateProfileStringA("gps", "name", "GPS", pConfig->gpsName, sizeof(pConfig->gpsName), CONFIG_FILE_PATH_NAME);
 }
 
 int SetConfig(const PUConfig* pConfig)
@@ -47,6 +52,9 @@ int SetConfig(const PUConfig* pConfig)
     WritePrivateProfileStringA("server", "port", tempbuf, CONFIG_FILE_PATH_NAME);
     sprintf(tempbuf, "%d", pConfig->protoType);
     WritePrivateProfileStringA("server", "type", tempbuf, CONFIG_FILE_PATH_NAME);
+    sprintf(tempbuf, "%d", pConfig->interval);
+    WritePrivateProfileStringA("gps", "interval", tempbuf, CONFIG_FILE_PATH_NAME);
+    WritePrivateProfileStringA("gps", "name", pConfig->gpsName, CONFIG_FILE_PATH_NAME);
     return 0;
 }
 #else
@@ -55,10 +63,12 @@ void LoadConfig(PUConfig* pConfig)
     strncpy_s(pConfig->ID, DEFAULT_ID);
     strncpy_s(pConfig->Name, DEFAULT_NAME);
     strncpy_s(pConfig->serverIP, DEFAULT_SERVERIP);
+    strncpy_s(pConfig->gpsName, "GPS");
     pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = DEFAULT_PROTOTYPE;
     pConfig->lat = 200 * 10000000;
     pConfig->lng = 200 * 10000000;
+    pConfig->interval = DEFAULT_GPS_INTERVAL;
 }
 
 int SetConfig(const PUConfig* pConfig)

@@ -40,7 +40,6 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     m_sesParam.stEntityInfo.iBootDuration = GetTickCount64() / 1000;
 #endif
 }
-
 CPUSessionBase::~CPUSessionBase()
 {
     Logout();
@@ -50,76 +49,76 @@ void CPUSessionBase::SetName(const char* Name)
 {
     strncpy_s(m_deviceInfo.szName, Name, _TRUNCATE);
 }
-
 void CPUSessionBase::SetManufacturer(const char* Manufacturer)
 {
     strncpy_s(m_deviceInfo.szManufacturer, Manufacturer, _TRUNCATE);
 }
-
 void CPUSessionBase::SetProductName(const char* ProductName)
 {
     strncpy_s(m_deviceInfo.szProductName, ProductName, _TRUNCATE);
 }
-
 void CPUSessionBase::SetSoftwareVersion(const char* SoftwareVersion)
 {
     strncpy_s(m_deviceInfo.szSoftwareVersion, SoftwareVersion, _TRUNCATE);
 }
-
 void CPUSessionBase::SetHardwareVersion(const char* HardwareVersion)
 {
     strncpy_s(m_deviceInfo.szHardwareVersion, HardwareVersion, _TRUNCATE);
 }
-
 void CPUSessionBase::SetWIFICount(int count)
 {
     m_deviceInfo.iWIFICount = count;
 }
-
 void CPUSessionBase::SetRadioCount(int count)
 {
     m_deviceInfo.iRadioCount = count;
 }
-
 void CPUSessionBase::SetVideoInCount(int count)
 {
     m_deviceInfo.iVideoInCount = count;
 }
-
 void CPUSessionBase::SetAudioInCount(int count)
 {
     m_deviceInfo.iAudioInCount = count;
 }
-
 void CPUSessionBase::SetAudioOutCount(int count)
 {
     m_deviceInfo.iAudioOutCount = count;
 }
-
 void CPUSessionBase::SetAlertInCount(int count)
 {
     m_deviceInfo.iAlertInCount = count;
 }
-
 void CPUSessionBase::SetAlertOutCount(int count)
 {
     m_deviceInfo.iAlertOutCount = count;
 }
-
 void CPUSessionBase::SetStorageCount(int count)
 {
     m_deviceInfo.iStorageCount = count;
 }
-
 void CPUSessionBase::SetBootDuration(int duration)
 {
     m_sesParam.stEntityInfo.iBootDuration = duration;
 }
-
 void CPUSessionBase::SetDevicePosition(int lat, int lng)
 {
     m_deviceInfo.iLatitude = lat;
     m_deviceInfo.iLongitude = lng;
+}
+
+int CPUSessionBase::AddGPSChannel(CGPSChannelBase* pChannel)
+{
+    for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++ i)
+    {
+        if (m_GPSChannels[i] == 0)
+        {
+            m_GPSChannels[i] = pChannel;
+            pChannel->SetIndex(i);
+            return i;
+        }
+    }
+    return -1;
 }
 
 void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout, int iKeepaliveInterval)
@@ -130,12 +129,12 @@ void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout,
     m_sesParam.iTimeOut = timeout;
     m_sesParam.iKeepaliveInterval = iKeepaliveInterval;
 }
-
 int CPUSessionBase::Login(int through, int lat, int lng)
 {
     Logout();
     m_sesParam.pUserData = this;
     // 通道信息
+    BVCU_PUCFG_ChannelInfo* pChannelList = NULL;
     int iChannelCount = 0;
     for (int i = 0; i < MAX_AV_CHANNEL_COUNT; ++ i)
     {
@@ -154,6 +153,24 @@ int CPUSessionBase::Login(int through, int lat, int lng)
     }
     if (iChannelCount > 0)
     {
+        pChannelList = new BVCU_PUCFG_ChannelInfo[iChannelCount];
+        if (pChannelList)
+        {
+            int channelIndex = 0;
+            for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++i)
+            {
+                if (m_GPSChannels[i] != NULL)
+                {
+                    memset(&pChannelList[channelIndex], 0x00, sizeof(pChannelList[channelIndex]));
+                    pChannelList[channelIndex].iChannelIndex = m_GPSChannels[i]->GetChannelIndex();
+                    pChannelList[channelIndex].iMediaDir = m_GPSChannels[i]->GetSupportMediaDir();
+                    strncpy_s(pChannelList[channelIndex].szName, sizeof(pChannelList[0].szName), m_GPSChannels[i]->GetName(), _TRUNCATE);
+                    ++channelIndex;
+                }
+            }
+            m_sesParam.stEntityInfo.iChannelCount = channelIndex;
+            m_sesParam.stEntityInfo.pChannelList = pChannelList;
+        }
     }
     else
         m_sesParam.stEntityInfo.iChannelCount = 0;
@@ -163,9 +180,10 @@ int CPUSessionBase::Login(int through, int lat, int lng)
     BVCU_Result bvResult = BVCSP_Login(&m_session, &m_sesParam);
     printf("Call BVCSP_login(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
         , m_deviceInfo.szID, bvResult, m_session);
+    if (pChannelList)
+        delete pChannelList;
     return bvResult;
 }
-
 int CPUSessionBase::Logout()
 {
     if (m_session)
@@ -217,6 +235,33 @@ void CPUSessionBase::OnSessionEvent(BVCSP_HSession hSession, int iEventCode, voi
         }
     }
 }
+void CPUSessionBase::OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_Event_DialogCmd* pParam)
+{
+    if (pParam)
+    {
+        BVCSP_DialogParam* pDialogParam = pParam->pDialogParam;
+        CPUSessionBase* pSession = (CPUSessionBase*)pDialogParam->pUserData;
+        if (pSession == 0 || pDialogParam->hSession != pSession->m_session)
+            return;
+        if (BVCU_SUBDEV_INDEXMAJOR_MIN_GPS <= pDialogParam->stTarget.iIndexMajor && pDialogParam->stTarget.iIndexMajor <= BVCU_SUBDEV_INDEXMAJOR_MAX_GPS)
+        {
+            int index = pDialogParam->stTarget.iIndexMajor - BVCU_SUBDEV_INDEXMAJOR_MIN_GPS;
+            if (pSession->m_GPSChannels[index] == 0 || pSession->m_GPSChannels[index]->GetHDialog() != hDialog)
+                return;
+            if (iEventCode == BVCSP_EVENT_DIALOG_OPEN && BVCU_Result_SUCCEEDED(pParam->iResult))
+                pSession->m_GPSChannels[index]->OnOpen();
+            else if (iEventCode != BVCSP_EVENT_DIALOG_UPDATE)
+            {
+                pSession->m_GPSChannels[index]->SetHialog(0, 0);
+                pSession->m_GPSChannels[index]->OnClose();
+            }
+        }
+    }
+}
+BVCU_Result CPUSessionBase::afterDialogRecv(BVCSP_HDialog hDialog, BVCSP_Packet* pPacket)
+{
+    return BVCU_RESULT_S_OK;
+}
 BVCU_Result CPUSessionBase::OnNotify(BVCSP_HSession hSession, BVCSP_NotifyMsgContent* pData)
 {
     printf("On Notify callback. submethod-%d \n", pData->iSubMethod);
@@ -238,5 +283,27 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
 }
 BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, BVCSP_DialogParam* pParam)
 {
+    BVCSP_SessionInfo sesInfo;
+    if (BVCU_Result_SUCCEEDED(BVCSP_GetSessionInfo(pParam->hSession, &sesInfo)))
+    {
+        CPUSessionBase* pSession = (CPUSessionBase*)sesInfo.stParam.pUserData;
+        if (pSession == 0 || pParam->hSession != pSession->m_session)
+            return BVCU_RESULT_E_BADREQUEST;
+        if (BVCU_SUBDEV_INDEXMAJOR_MIN_GPS <= pParam->stTarget.iIndexMajor && pParam->stTarget.iIndexMajor <= BVCU_SUBDEV_INDEXMAJOR_MAX_GPS)
+        {
+            int index = pParam->stTarget.iIndexMajor - BVCU_SUBDEV_INDEXMAJOR_MIN_GPS;
+            if (pSession->m_GPSChannels[index] != 0)
+            {
+                BVCU_Result iReuslt = pSession->m_GPSChannels[index]->OnOpenRequest();
+                if (BVCU_Result_FAILED(iReuslt))
+                    return iReuslt;
+                pSession->m_GPSChannels[index]->SetHialog(hDialog, pParam->iAVStreamDir);
+                pParam->pUserData = pSession;
+                pParam->OnEvent = OnDialogEvent;
+                pParam->afterRecv = afterDialogRecv;
+                return BVCU_RESULT_S_OK;
+            }
+        }
+    }
     return BVCU_RESULT_E_FAILED;// 不接受这个命令处理
 }

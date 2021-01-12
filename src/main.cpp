@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <process.h>
+
 #include "BVCSP.h"
 #include "main.h"
 
 
 #ifdef _MSC_VER
+#include <windows.h>
     #ifdef _WIN64
         #pragma comment(lib, "BVCSP_x64.lib")
     #elif _WIN32
@@ -17,6 +20,17 @@ void Log_Callback(int level, const char* log)
     printf("[BVCSP LOG] %s\n", log);
 }
 
+// 用来定时 读取音视频、GPS、串口数据，并发送。
+unsigned __stdcall Wall_App(void*)
+{
+    while (true)
+    {
+        HandleEvent();
+        Sleep(5);
+    }
+    return 0;
+}
+
 int main()
 {
     // 初始化库
@@ -25,6 +39,8 @@ int main()
 
     // 开始认证
     Auth();
+
+    _beginthreadex(NULL, 0, Wall_App, NULL, 0, NULL);
 
     while(1)
     {
@@ -45,7 +61,7 @@ int main()
         {
         }
     }
-
+    Logout();
     BVCSP_Finish();
     return 0;
 }
