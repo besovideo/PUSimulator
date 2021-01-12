@@ -8,10 +8,10 @@ class CGPSChannel : public CGPSChannelBase
 {
 public:
     // ======= 需要实现的功能接口
-    virtual BVCU_Result OnSetName(const char* name);
-    virtual BVCU_Result OnOpenRequest();
-    virtual void OnOpen();
-    virtual void OnClose();
+    virtual BVCU_Result OnSetName(const char* name); // 收到配置通道名称请求
+    virtual BVCU_Result OnOpenRequest();   // 收到打开请求，回复是否同意，0：同意
+    virtual void OnOpen();   // 建立通道连接成功通知
+    virtual void OnClose();  // 通道连接关闭通知
     virtual const BVCU_PUCFG_GPSData* OnGetGPSData();   // 收到查询定位
     virtual const BVCU_PUCFG_GPSParam* OnGetGPSParam(); // 收到查询配置
     virtual BVCU_Result OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam); // 收到修改配置

@@ -5,6 +5,7 @@
 
 #include "base/session.h"
 #include "gps.h"
+#include "tsp.h"
 
 class CPUSession : public CPUSessionBase
 {
@@ -57,6 +58,7 @@ void CPUSession::OnOfflineEvent(BVCU_Result iResult)
 
 static CPUSession* pSession = 0;  // 全局Session
 static CGPSChannel* pGPS = 0;     // 全局GPS通道对象。
+static CTSPChannel* pTSP = 0;     // 全局串口通道对象。
 
 // 登录服务器。从配置文件中读取设备信息，和服务器信息；请提前设置好。
 int Login(bool autoOption)
@@ -82,6 +84,8 @@ int Login(bool autoOption)
             // 注册通道
             pGPS = new CGPSChannel();
             pSession->AddGPSChannel(pGPS);
+            pTSP = new CTSPChannel();
+            pSession->AddTSPChannel(pTSP);
         }
     }
     if (pSession == 0)
@@ -102,7 +106,7 @@ int Logout()
 void HandleEvent()
 {
     if (pGPS)
-    {
         pGPS->UpdateData();
-    }
+    if (pTSP)
+        pTSP->SendData();
 }

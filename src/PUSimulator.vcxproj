@@ -161,6 +161,7 @@
     <ClCompile Include="gps.cpp" />
     <ClCompile Include="loginout.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="tsp.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -172,6 +173,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="gps.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="tsp.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

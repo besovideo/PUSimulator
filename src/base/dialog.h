@@ -32,6 +32,7 @@ public:
     // 不要调用，底层交互接口
     BVCSP_HDialog GetHDialog() { return m_hDialog; }
     void SetHialog(BVCSP_HDialog hDialog, int mediaDir) { m_hDialog = hDialog; m_iOpenMediaDir = mediaDir; }
+    BVCU_Result OnRecvPacket(const BVCSP_Packet* packet);
 };
 
 // 音视频通道
@@ -62,6 +63,15 @@ public:
 class CTSPChannelBase : public CChannelBase
 {
 public:
+    // ======= 需要实现的功能接口
+    virtual BVCU_Result OnOpenRequest() = 0;   // 收到打开请求，回复是否同意，0：同意
+    virtual void OnRecvData(const void* pkt, int len) = 0;   // 收到平台发给串口的数据。
+    virtual const BVCU_PUCFG_SerialPort* OnGetTSPParam() = 0; // 收到查询配置
+    virtual BVCU_Result OnSetTSPParam(const BVCU_PUCFG_SerialPort* pParam) = 0; // 收到修改配置
+
+public:
     CTSPChannelBase() : CChannelBase(BVCU_SUBDEV_INDEXMAJOR_MIN_TSP) {};
     virtual ~CTSPChannelBase() {}
+    // 发送 串口数据 给平台
+    BVCU_Result WriteData(const char* pkt, int len);
 };

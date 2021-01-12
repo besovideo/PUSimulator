@@ -27,6 +27,17 @@ void CChannelBase::SetName(const char* name)
     strncpy_s(m_name, sizeof(m_name), name, _TRUNCATE);
 }
 
+BVCU_Result CChannelBase::OnRecvPacket(const BVCSP_Packet* packet)
+{
+    if (m_channelIndexBase == BVCU_SUBDEV_INDEXMAJOR_MIN_TSP)
+    {
+        CTSPChannelBase* pTSPChannel = dynamic_cast<CTSPChannelBase*>(this);
+        if (pTSPChannel)
+            pTSPChannel->OnRecvData(packet->pData, packet->iDataSize);
+    }
+    return BVCU_RESULT_S_OK;
+}
+
 CAVChannelBase::CAVChannelBase()
     : CChannelBase(BVCU_SUBDEV_INDEXMAJOR_MIN_CHANNEL)
 {
@@ -47,6 +58,20 @@ BVCU_Result CGPSChannelBase::WriteData(const BVCU_PUCFG_GPSData* pGPSData)
         packet.iDataType = BVCSP_DATA_TYPE_GPS;
         packet.iDataSize = sizeof(*pGPSData);
         packet.pData = (void*)pGPSData;
+        return BVCSP_Dialog_Write(m_hDialog, &packet);
+    }
+    return BVCU_RESULT_E_BADSTATE;
+}
+
+BVCU_Result CTSPChannelBase::WriteData(const char* pkt, int len)
+{
+    if (m_hDialog != 0)
+    {
+        BVCSP_Packet packet;
+        memset(&packet, 0x00, sizeof(packet));
+        packet.iDataType = BVCSP_DATA_TYPE_TSP;
+        packet.iDataSize = len;
+        packet.pData = (void*)pkt;
         return BVCSP_Dialog_Write(m_hDialog, &packet);
     }
     return BVCU_RESULT_E_BADSTATE;
