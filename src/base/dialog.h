@@ -6,6 +6,7 @@ class CChannelBase
 public:
     // ======= 需要实现的功能接口
     virtual BVCU_Result OnSetName(const char* name) = 0; // 收到配置通道名称请求
+    virtual BVCU_Result OnOpenRequest() = 0;   // 收到打开请求，回复是否同意，0：同意
     virtual void OnOpen() = 0;   // 建立通道连接成功通知
     virtual void OnClose() = 0;  // 通道连接关闭通知
 
@@ -16,7 +17,8 @@ protected:
     char m_name[64];         // 通道名称。
 
     BVCSP_HDialog m_hDialog; // BVCSP传输句柄。
-    int m_iOpenMediaDir;     // 当前打开媒体方向
+    int m_openMediaDir;      // 当前打开媒体方向。
+    bool m_bOpening;         // 是否正在打开中，等待回复。
 public:
     CChannelBase(int IndexBase);
     virtual ~CChannelBase();
@@ -31,16 +33,41 @@ public:
 
     // 不要调用，底层交互接口
     BVCSP_HDialog GetHDialog() { return m_hDialog; }
-    void SetHialog(BVCSP_HDialog hDialog, int mediaDir) { m_hDialog = hDialog; m_iOpenMediaDir = mediaDir; }
+    int  GetOpenDir() { return m_openMediaDir; }
+    void SetHialog(BVCSP_HDialog hDialog, int mediaDir) { m_hDialog = hDialog; m_openMediaDir = mediaDir; }
+    void SetBOpening(bool bOpening) { m_bOpening = bOpening; }
     BVCU_Result OnRecvPacket(const BVCSP_Packet* packet);
+    typedef void (*bvcsp_OnDialogEvent)(BVCSP_HDialog hDialog, int iEventCode, BVCSP_Event_DialogCmd* pParam);
+    static bvcsp_OnDialogEvent g_bvcsp_onevent;
 };
 
 // 音视频通道
 class CAVChannelBase : public CChannelBase
 {
 public:
-    CAVChannelBase();
+    // ======= 需要实现的功能接口
+    virtual void OnRecvAudio(long long iPTS, const void* pkt, int len) = 0;   // 收到平台发来的音频数据。编码信息同ReplySDP()。
+    virtual BVCU_Result OnPTZCtrl(const BVCU_PUCFG_PTZControl* ptzCtrl) = 0;   // 收到平台发来的云台控制命令。
+    //virtual const BVCU_PUCFG_EncoderChannel* OnGetEncoder() = 0;  // 收到平台查询编码配置请求
+    //virtual BVCU_Result OnSetEncoder(const BVCU_PUCFG_EncoderChannel* param) = 0;  // 收到平台设置编码配置请求
+public:
+    CAVChannelBase(bool bVideoIn, bool bAudioIn, bool bAudioOut, bool ptz);// 是否支持：视频采集，音频采集，音频播放，云台
     virtual ~CAVChannelBase() {}
+    // 回复 打开请求, 不支持的可以为空。收到打开请求后，需要调用ReplySDP回复请求。
+    BVCU_Result ReplySDP(BVCU_Result result, const BVCSP_VideoCodec* video, const BVCSP_AudioCodec* audio); // 是否成功、视频SDP、音频SDP
+    BVCU_Result WriteVideo(long long iPTS, const char* pkt, int len);
+    BVCU_Result WriteAudio(long long iPTS, const char* pkt, int len);
+    // 查询
+    bool BSupportVideoIn() { return (m_supportMediaDir & BVCU_MEDIADIR_VIDEOSEND) != 0; }
+    bool BSupportAudioIn() { return (m_supportMediaDir & BVCU_MEDIADIR_AUDIOSEND) != 0; }
+    bool BSupportAudioOut() { return (m_supportMediaDir & BVCU_MEDIADIR_AUDIORECV) != 0; }
+    bool BSupportPTZ() { return m_bptz; }
+    bool BNeedVideoIn() { return (m_openMediaDir & BVCU_MEDIADIR_VIDEOSEND) != 0; }
+    bool BNeedAudioIn() { return (m_openMediaDir & BVCU_MEDIADIR_AUDIOSEND) != 0; }
+    bool BNeedAudioOut() { return (m_openMediaDir & BVCU_MEDIADIR_AUDIORECV) != 0; }
+
+protected:
+    bool m_bptz; // 是否支持云台。
 };
 
 // GPS 通道
@@ -48,7 +75,6 @@ class CGPSChannelBase : public CChannelBase
 {
 public:
     // ======= 需要实现的功能接口
-    virtual BVCU_Result OnOpenRequest() = 0;   // 收到打开请求，回复是否同意，0：同意
     virtual const BVCU_PUCFG_GPSData* OnGetGPSData() = 0;   // 收到查询定位
     virtual const BVCU_PUCFG_GPSParam* OnGetGPSParam() = 0; // 收到查询配置
     virtual BVCU_Result OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam) = 0; // 收到修改配置
@@ -64,13 +90,12 @@ class CTSPChannelBase : public CChannelBase
 {
 public:
     // ======= 需要实现的功能接口
-    virtual BVCU_Result OnOpenRequest() = 0;   // 收到打开请求，回复是否同意，0：同意
     virtual void OnRecvData(const void* pkt, int len) = 0;   // 收到平台发给串口的数据。
     virtual const BVCU_PUCFG_SerialPort* OnGetTSPParam() = 0; // 收到查询配置
     virtual BVCU_Result OnSetTSPParam(const BVCU_PUCFG_SerialPort* pParam) = 0; // 收到修改配置
 
 public:
-    CTSPChannelBase() : CChannelBase(BVCU_SUBDEV_INDEXMAJOR_MIN_TSP) {};
+    CTSPChannelBase();
     virtual ~CTSPChannelBase() {}
     // 发送 串口数据 给平台
     BVCU_Result WriteData(const char* pkt, int len);

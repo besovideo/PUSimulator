@@ -65,6 +65,10 @@ protected:
     BVCSP_HSession m_session;
     bool m_bOnline;
 
+public:
+    // 获取
+    CChannelBase* GetChannelBase(int channelIndex);
+
     // BVCSP 的回调
     static void OnSessionEvent(BVCSP_HSession hSession, int iEventCode, void* pParam);
     static BVCU_Result OnCommand(BVCSP_HSession hSession, BVCSP_Command* pCommand);

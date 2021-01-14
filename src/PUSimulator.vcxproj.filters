@@ -57,6 +57,9 @@
     <ClCompile Include="tsp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="media.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="auth\bv_auth.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tsp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="media.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

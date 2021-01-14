@@ -24,6 +24,8 @@ struct PUConfig
     // gps
     int  interval;     // 上报间隔：秒
     char gpsName[64];  // GPS 通道名称
+    // 媒体通道
+    char mediaName[64];  // GPS 通道名称
 };
 
 // 加载配置信息，pConfig带回

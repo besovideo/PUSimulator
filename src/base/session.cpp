@@ -107,6 +107,19 @@ void CPUSessionBase::SetDevicePosition(int lat, int lng)
     m_deviceInfo.iLongitude = lng;
 }
 
+int CPUSessionBase::AddAVChannel(CAVChannelBase* pChannel)
+{
+    for (int i = 0; i < MAX_AV_CHANNEL_COUNT; ++i)
+    {
+        if (m_avChannels[i] == 0)
+        {
+            m_avChannels[i] = pChannel;
+            pChannel->SetIndex(i);
+            return i;
+        }
+    }
+    return -1;
+}
 int CPUSessionBase::AddGPSChannel(CGPSChannelBase* pChannel)
 {
     for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++ i)
@@ -179,6 +192,17 @@ int CPUSessionBase::Login(int through, int lat, int lng)
         if (pChannelList)
         {
             int channelIndex = 0;
+            for (int i = 0; i < MAX_AV_CHANNEL_COUNT; ++i)
+            {
+                if (m_avChannels[i] != NULL)
+                {
+                    memset(&pChannelList[channelIndex], 0x00, sizeof(pChannelList[channelIndex]));
+                    pChannelList[channelIndex].iChannelIndex = m_avChannels[i]->GetChannelIndex();
+                    pChannelList[channelIndex].iMediaDir = m_avChannels[i]->GetSupportMediaDir();
+                    strncpy_s(pChannelList[channelIndex].szName, sizeof(pChannelList[0].szName), m_avChannels[i]->GetName(), _TRUNCATE);
+                    ++channelIndex;
+                }
+            }
             for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++i)
             {
                 if (m_GPSChannels[i] != NULL)
@@ -231,6 +255,30 @@ int CPUSessionBase::Logout()
     return 0;
 }
 
+CChannelBase* CPUSessionBase::GetChannelBase(int channelIndex)
+{
+    CChannelBase* pChannel = 0;
+    if (BVCU_SUBDEV_INDEXMAJOR_MIN_CHANNEL <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_CHANNEL)
+    {
+        int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_CHANNEL;
+        if (index < MAX_AV_CHANNEL_COUNT)
+            pChannel = m_avChannels[index];
+    }
+    else if (BVCU_SUBDEV_INDEXMAJOR_MIN_GPS <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_GPS)
+    {
+        int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_GPS;
+        if (index < MAX_GPS_CHANNEL_COUNT)
+            pChannel = m_GPSChannels[index];
+    }
+    else if (BVCU_SUBDEV_INDEXMAJOR_MIN_TSP <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_TSP)
+    {
+        int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_TSP;
+        if (index < MAX_TSP_CHANNEL_COUNT)
+            pChannel = m_TSPChannels[index];
+    }
+    return pChannel;
+}
+
 void CPUSessionBase::OnSessionEvent(BVCSP_HSession hSession, int iEventCode, void* pParam)
 {
     BVCU_Result iResult = (BVCU_Result)(int(pParam));
@@ -276,18 +324,7 @@ void CPUSessionBase::OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_
         CPUSessionBase* pSession = (CPUSessionBase*)pDialogParam->pUserData;
         if (pSession == 0 || pDialogParam->hSession != pSession->m_session)
             return;
-        int channelIndex = pDialogParam->stTarget.iIndexMajor;
-        CChannelBase* pChannel = 0;
-        if (BVCU_SUBDEV_INDEXMAJOR_MIN_GPS <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_GPS)
-        {
-            int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_GPS;
-            pChannel = pSession->m_GPSChannels[index];
-        }
-        else if (BVCU_SUBDEV_INDEXMAJOR_MIN_TSP <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_TSP)
-        {
-            int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_TSP;
-            pChannel = pSession->m_TSPChannels[index];
-        }
+        CChannelBase* pChannel = pSession->GetChannelBase(pDialogParam->stTarget.iIndexMajor);
         if (pChannel == 0 || pChannel->GetHDialog() != hDialog)
             return;
         if (iEventCode == BVCSP_EVENT_DIALOG_OPEN && BVCU_Result_SUCCEEDED(pParam->iResult))
@@ -308,13 +345,7 @@ BVCU_Result CPUSessionBase::afterDialogRecv(BVCSP_HDialog hDialog, BVCSP_Packet*
         if (pSession == 0 || info.stParam.hSession != pSession->m_session)
             return BVCU_RESULT_E_BADREQUEST;
 
-        int channelIndex = info.stParam.stTarget.iIndexMajor;
-        CChannelBase* pChannel = 0;
-        if (BVCU_SUBDEV_INDEXMAJOR_MIN_TSP <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_TSP)
-        {
-            int index = info.stParam.stTarget.iIndexMajor - BVCU_SUBDEV_INDEXMAJOR_MIN_TSP;
-            pChannel = pSession->m_TSPChannels[index];
-        }
+        CChannelBase* pChannel = pSession->GetChannelBase(info.stParam.stTarget.iIndexMajor);
         if (pChannel == 0 || pChannel->GetHDialog() != hDialog)
             return BVCU_RESULT_E_BADREQUEST;
         return pChannel->OnRecvPacket(pPacket);
@@ -343,7 +374,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
     if (pCommand->iMethod == BVCU_METHOD_QUERY)
     {
         if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
-        {   //串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
+        {   // 串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
             int index = pCommand->iTargetIndex;
             if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
             {
@@ -360,6 +391,20 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
     }
     else if (pCommand->iMethod == BVCU_METHOD_CONTROL)
     {
+        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
+        {   // 串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
+            int index = pCommand->iTargetIndex;
+            if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
+            {
+                const BVCU_PUCFG_SerialPort* pParam = (BVCU_PUCFG_SerialPort*)pCommand->stMsgContent.pData;
+                if (pParam)
+                {
+                    szResult.iResult = pSession->m_TSPChannels[index]->OnSetTSPParam(pParam);
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
     }
     return BVCU_RESULT_E_FAILED;// 不接受这个命令处理
 }
@@ -371,35 +416,31 @@ BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, B
         CPUSessionBase* pSession = (CPUSessionBase*)sesInfo.stParam.pUserData;
         if (pSession == 0 || pParam->hSession != pSession->m_session)
             return BVCU_RESULT_E_BADREQUEST;
-        if (BVCU_SUBDEV_INDEXMAJOR_MIN_GPS <= pParam->stTarget.iIndexMajor && pParam->stTarget.iIndexMajor <= BVCU_SUBDEV_INDEXMAJOR_MAX_GPS)
+        CChannelBase::g_bvcsp_onevent = pParam->OnEvent;
+        CChannelBase* pChannel = pSession->GetChannelBase(pParam->stTarget.iIndexMajor);
+        if (pChannel)
         {
-            int index = pParam->stTarget.iIndexMajor - BVCU_SUBDEV_INDEXMAJOR_MIN_GPS;
-            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+            int iOldDir = pChannel->GetOpenDir();
+            pChannel->SetHialog(hDialog, pParam->iAVStreamDir);
+            BVCU_Result iReuslt = pChannel->OnOpenRequest();
+            if (BVCU_Result_FAILED(iReuslt))
             {
-                BVCU_Result iReuslt = pSession->m_GPSChannels[index]->OnOpenRequest();
-                if (BVCU_Result_FAILED(iReuslt))
-                    return iReuslt;
-                pSession->m_GPSChannels[index]->SetHialog(hDialog, pParam->iAVStreamDir);
-                pParam->pUserData = pSession;
-                pParam->OnEvent = OnDialogEvent;
-                pParam->afterRecv = afterDialogRecv;
-                return BVCU_RESULT_S_OK;
+                if (iEventCode == BVCSP_EVENT_DIALOG_OPEN)
+                    pChannel->SetHialog(0, 0);
+                else
+                    pChannel->SetHialog(hDialog, iOldDir);
+                return iReuslt;
             }
-        }
-        else if (BVCU_SUBDEV_INDEXMAJOR_MIN_TSP <= pParam->stTarget.iIndexMajor && pParam->stTarget.iIndexMajor <= BVCU_SUBDEV_INDEXMAJOR_MAX_TSP)
-        {
-            int index = pParam->stTarget.iIndexMajor - BVCU_SUBDEV_INDEXMAJOR_MIN_TSP;
-            if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
+            pParam->pUserData = pSession;
+            pParam->OnEvent = OnDialogEvent;
+            pParam->afterRecv = afterDialogRecv;
+            if (pParam->stTarget.iIndexMajor <= BVCU_SUBDEV_INDEXMAJOR_MAX_CHANNEL)
             {
-                BVCU_Result iReuslt = pSession->m_TSPChannels[index]->OnOpenRequest();
-                if (BVCU_Result_FAILED(iReuslt))
-                    return iReuslt;
-                pSession->m_TSPChannels[index]->SetHialog(hDialog, pParam->iAVStreamDir);
-                pParam->pUserData = pSession;
-                pParam->OnEvent = OnDialogEvent;
-                pParam->afterRecv = afterDialogRecv;
-                return BVCU_RESULT_S_OK;
+                pChannel->SetBOpening(true);
+                return BVCU_RESULT_S_PENDING;
             }
+            else
+                return BVCU_RESULT_S_OK;
         }
     }
     return BVCU_RESULT_E_FAILED;// 不接受这个命令处理

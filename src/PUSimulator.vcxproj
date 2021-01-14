@@ -161,6 +161,7 @@
     <ClCompile Include="gps.cpp" />
     <ClCompile Include="loginout.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="media.cpp" />
     <ClCompile Include="tsp.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
@@ -173,6 +174,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="gps.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="media.h" />
     <ClInclude Include="tsp.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
