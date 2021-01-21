@@ -30,6 +30,7 @@ void CTSPChannel::SendData()
 
 BVCU_Result CTSPChannel::OnSetName(const char* name)
 {
+    SetName(name);
     return BVCU_RESULT_S_OK;
 }
 BVCU_Result CTSPChannel::OnOpenRequest()

@@ -373,7 +373,22 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
     szResult.iResult = BVCU_RESULT_S_OK;
     if (pCommand->iMethod == BVCU_METHOD_QUERY)
     {
-        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
+        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPSDATA)
+        {   // 获取PU的GPS通道数据。输入类型：无；输出类型: BVCU_PUCFG_GPSData
+            int index = pCommand->iTargetIndex;
+            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+            {
+                const BVCU_PUCFG_GPSData* pParam = pSession->m_GPSChannels[index]->OnGetGPSData();
+                if (pParam)
+                {
+                    szResult.stContent.iDataCount = 1;
+                    szResult.stContent.pData = (void*)pParam;
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
         {   // 串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
             int index = pCommand->iTargetIndex;
             if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
@@ -388,10 +403,49 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 }
             }
         }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPS)
+        {   // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
+            int index = pCommand->iTargetIndex;
+            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+            {
+                const BVCU_PUCFG_GPSParam* pParam = pSession->m_GPSChannels[index]->OnGetGPSParam();
+                if (pParam)
+                {
+                    szResult.stContent.iDataCount = 1;
+                    szResult.stContent.pData = (void*)pParam;
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
     }
     else if (pCommand->iMethod == BVCU_METHOD_CONTROL)
     {
-        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
+        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_DEVICEINFO)
+        {   // 设备信息。输入类型：BVCU_PUCFG_DeviceInfo;输出类型：无
+                const BVCU_PUCFG_DeviceInfo* pParam = (BVCU_PUCFG_DeviceInfo*)pCommand->stMsgContent.pData;
+                if (pParam)
+                {
+                    szResult.iResult = pSession->OnSetInfo(pParam->szName, pParam->iLatitude, pParam->iLongitude);
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_CHANNELINFO)
+        {   // 某个PU的通道信息。输入类型：BVCU_PUCFG_PUChannelInfo；输出类型: 无；触发类型：同名Notify
+            const BVCU_PUCFG_PUChannelInfo* pParam = (BVCU_PUCFG_PUChannelInfo*)pCommand->stMsgContent.pData;
+            if (pParam)
+            {
+                for (int i = 0; i < pParam->iChannelCount; ++ i)
+                {
+                    CChannelBase* pChannel = pSession->GetChannelBase(pParam->pChannel[i].iChannelIndex);
+                    szResult.iResult = pChannel->OnSetName(pParam->pChannel[i].szName);
+                }
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
+            }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
         {   // 串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
             int index = pCommand->iTargetIndex;
             if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
@@ -400,6 +454,34 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 if (pParam)
                 {
                     szResult.iResult = pSession->m_TSPChannels[index]->OnSetTSPParam(pParam);
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPS)
+        {   // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
+            int index = pCommand->iTargetIndex;
+            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+            {
+                const BVCU_PUCFG_GPSParam* pParam = (BVCU_PUCFG_GPSParam*)pCommand->stMsgContent.pData;
+                if (pParam)
+                {
+                    szResult.iResult = pSession->m_GPSChannels[index]->OnSetGPSParam(pParam);
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_PTZCONTROL)
+        {   // 操作云台。输入类型：BVCU_PUCFG_PTZControl；输出类型：无
+            int index = pCommand->iTargetIndex;
+            if (index < MAX_AV_CHANNEL_COUNT && pSession->m_avChannels[index] != 0)
+            {
+                const BVCU_PUCFG_PTZControl* pParam = (BVCU_PUCFG_PTZControl*)pCommand->stMsgContent.pData;
+                if (pParam)
+                {
+                    szResult.iResult = pSession->m_avChannels[index]->OnPTZCtrl(pParam);
                     pCommand->OnEvent(hSession, pCommand, &szResult);
                     return BVCU_RESULT_S_OK;
                 }

@@ -17,7 +17,7 @@ public:
     virtual BVCU_Result OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam); // 收到修改配置
 
 protected:
-    int m_interval;   // 上报数据时间间隔，秒。
+    BVCU_PUCFG_GPSParam m_param;
     time_t m_lasttime;   // 上次上报时间时间。秒。time();
     BVCU_PUCFG_GPSData m_position; // 当前位置。模拟的，您可以从GPS设备中获取。
     int m_lat;  // 中心位置，模拟位置以中心位置为圆点，画圆运动。

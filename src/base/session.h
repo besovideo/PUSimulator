@@ -3,7 +3,6 @@
 #include "BVCSP.h"
 
 #include "dialog.h"
-#include "command.h"
 #include "filetransfer.h"
 
 #define MAX_AV_CHANNEL_COUNT 8 // 最大支持的音视频通道数（可以改）
@@ -14,9 +13,9 @@ class CPUSessionBase
 {
 protected:
     // ============   下面的要注意了，需要实现 ===============
-    // 收到配置设备信息命令。成功返回0.
+    // 收到配置设备信息命令。成功返回0。添加其它命令的支持，可以参考OnSetInfo的实现原理。
     // name:设备名称。lat,lng 设备WGS84坐标位置,1/10000000.
-    virtual int OnSetInfo(const char* name, int lat, int lng) = 0; 
+    virtual BVCU_Result OnSetInfo(const char* name, int lat, int lng) = 0;
     // 上线服务器结果回调通知.
     virtual void OnLoginEvent(BVCU_Result iResult) = 0;
     // 服务器掉线回调通知.

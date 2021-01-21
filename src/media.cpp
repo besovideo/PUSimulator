@@ -163,6 +163,7 @@ BVCU_Result CMediaChannel::OnSetName(const char* name)
     LoadConfig(&puconfig);
     strncpy_s(puconfig.mediaName, sizeof(puconfig.mediaName), name, _TRUNCATE);
     SetConfig(&puconfig);
+    SetName(name);
     return BVCU_RESULT_S_OK;
 }
 BVCU_Result CMediaChannel::OnOpenRequest()

@@ -39,9 +39,6 @@
     <ClCompile Include="loginout.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="base\command.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="base\dialog.cpp">
       <Filter>base</Filter>
     </ClCompile>
@@ -73,9 +70,6 @@
     </ClInclude>
     <ClInclude Include="main.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="base\command.h">
-      <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\dialog.h">
       <Filter>base</Filter>

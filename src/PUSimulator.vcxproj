@@ -153,7 +153,6 @@
   <ItemGroup>
     <ClCompile Include="auth.cpp" />
     <ClCompile Include="auth\bv_auth.cpp" />
-    <ClCompile Include="base\command.cpp" />
     <ClCompile Include="base\dialog.cpp" />
     <ClCompile Include="base\filetransfer.cpp" />
     <ClCompile Include="base\session.cpp" />
@@ -167,7 +166,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="auth\bv_auth.h" />
-    <ClInclude Include="base\command.h" />
     <ClInclude Include="base\dialog.h" />
     <ClInclude Include="base\filetransfer.h" />
     <ClInclude Include="base\session.h" />

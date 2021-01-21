@@ -4,7 +4,6 @@
 
 
 CGPSChannel::CGPSChannel()
-    : m_interval(5)
 {
     memset(&m_position, 0x00, sizeof(m_position));
     m_position.bAntennaState = 1;
@@ -15,14 +14,24 @@ CGPSChannel::CGPSChannel()
     // 从配置文件中加载配置。
     PUConfig puconfig;
     LoadConfig(&puconfig);
+    if (0 >= puconfig.interval || puconfig.interval <= 10*60)
+        puconfig.interval = 5;
     m_lat = puconfig.lat;
     m_lng = puconfig.lng;
-    m_interval = puconfig.interval;
     SetName(puconfig.gpsName);
-    m_lasttime = time(NULL) - m_interval;
+    m_lasttime = time(NULL) - puconfig.interval;
     m_position.iLatitude = m_lat + (rand() % 999999) * sin((float)rand()) + 100000;
     m_position.iLongitude = m_lng + (rand() % 999999) * sin((float)rand()) + 100000;
     m_chagedu = abs(m_lng - m_position.iLongitude) + abs(m_lat - m_position.iLatitude);
+
+    // GPS 参数
+    memset(&m_param, 0x00, sizeof(m_param));
+    m_param.bEnable = 1;
+    strncpy_s(m_param.szName, sizeof(m_param.szName), GetName(), _TRUNCATE);
+    m_param.iSupportSatelliteSignal = BVCU_PUCFG_SATELLITE_GPS | BVCU_PUCFG_SATELLITE_BDS;
+    m_param.iSetupSatelliteSignal = BVCU_PUCFG_SATELLITE_GPS | BVCU_PUCFG_SATELLITE_BDS;
+    m_param.iReportInterval = puconfig.interval;
+    m_param.iReportDistance = 1;
 }
 
 bool CGPSChannel::ReadGPSData()
@@ -104,7 +113,7 @@ void CGPSChannel::UpdateData()
     // ========================  定时从设备中获取最新位置，并上报， 下面是模拟位置
     time_t now = time(NULL);
     int dely = now - m_lasttime;
-    if (dely >= m_interval)
+    if (dely >= m_param.iReportInterval)
     {
         m_lasttime = now;
         ReadGPSData();
@@ -119,6 +128,8 @@ BVCU_Result CGPSChannel::OnSetName(const char* name)
     LoadConfig(&puconfig);
     strncpy_s(puconfig.gpsName, sizeof(puconfig.gpsName), name, _TRUNCATE);
     SetConfig(&puconfig);
+    SetName(name);
+    strncpy_s(m_param.szName, sizeof(m_param.szName), GetName(), _TRUNCATE);
     return BVCU_RESULT_S_OK;
 }
 BVCU_Result CGPSChannel::OnOpenRequest()
@@ -139,28 +150,20 @@ void CGPSChannel::OnClose()
     return ;
 }
 const BVCU_PUCFG_GPSData* CGPSChannel::OnGetGPSData()
-{
-    // 从设备中读取GPS位置并返回
+{   // 从设备中读取GPS位置并返回
+    ReadGPSData();
     return &m_position;
 }
 const BVCU_PUCFG_GPSParam* CGPSChannel::OnGetGPSParam()
-{
-    // 查询GPS配置
-    BVCU_PUCFG_GPSParam param;
-    memset(&param, 0x00, sizeof(param));
-    param.bEnable = 1;
-    strncpy_s(param.szName, sizeof(param.szName), GetName(), _TRUNCATE);
-    param.iSupportSatelliteSignal = BVCU_PUCFG_SATELLITE_GPS | BVCU_PUCFG_SATELLITE_BDS;
-    param.iSetupSatelliteSignal = BVCU_PUCFG_SATELLITE_GPS | BVCU_PUCFG_SATELLITE_BDS;
-    param.iReportInterval = m_interval;
-    param.iReportDistance = 1;
-
-    return &param;
+{   // 查询GPS配置
+    return &m_param;
 }
 BVCU_Result CGPSChannel::OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam)
 {
     // 设置上报间隔 等参数
-    m_interval = pParam->iReportInterval;
+    m_param.iReportInterval = pParam->iReportInterval;
+    if (0 >= m_param.iReportInterval || m_param.iReportInterval <= 10 * 60)
+        m_param.iReportInterval = 5;
     PUConfig puconfig;
     LoadConfig(&puconfig);
     puconfig.interval = pParam->iReportInterval;

@@ -15,7 +15,7 @@ public:
     ~CPUSession();
 
 private:
-    virtual int OnSetInfo(const char* name, int lat, int lng);
+    virtual BVCU_Result OnSetInfo(const char* name, int lat, int lng);
     virtual void OnLoginEvent(BVCU_Result iResult);
     virtual void OnOfflineEvent(BVCU_Result iResult);
 };
@@ -30,7 +30,7 @@ CPUSession ::~CPUSession()
 }
 
 // 重构设置设备信息接口，保存平台下发的配置信息，回复0：成功。
-int CPUSession::OnSetInfo(const char* name, int lat, int lng)
+BVCU_Result CPUSession::OnSetInfo(const char* name, int lat, int lng)
 {
     PUConfig puconfig;
     LoadConfig(&puconfig);
@@ -38,7 +38,8 @@ int CPUSession::OnSetInfo(const char* name, int lat, int lng)
     puconfig.lat = lat;
     puconfig.lng = lng;
     SetConfig(&puconfig);
-    return 0;
+    SetName(name);
+    return BVCU_RESULT_S_OK;
 }
 // 在线状态变化通知，登录/退出 服务器
 void CPUSession::OnLoginEvent(BVCU_Result iResult)
