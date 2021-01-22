@@ -52,6 +52,8 @@ public:
     int AddAVChannel(CAVChannelBase* pChannel); // 添加音视频通道
     int AddGPSChannel(CGPSChannelBase* pChannel); // 添加GPS通道, return 硬件号
     int AddTSPChannel(CTSPChannelBase* pChannel); // 添加串口通道
+    // 注册文件接口类
+    int AddFileManager(CFileTransManager* pFile) { m_fileManager = pFile; }  // 添加文件接口类
 
 protected:
     BVCU_PUCFG_DeviceInfo  m_deviceInfo;
@@ -59,6 +61,7 @@ protected:
     CAVChannelBase* m_avChannels[MAX_AV_CHANNEL_COUNT];
     CGPSChannelBase* m_GPSChannels[MAX_GPS_CHANNEL_COUNT];
     CTSPChannelBase* m_TSPChannels[MAX_TSP_CHANNEL_COUNT];
+    CFileTransManager* m_fileManager;
 
     BVCSP_SessionParam m_sesParam;
     BVCSP_HSession m_session;
@@ -67,6 +70,7 @@ protected:
 public:
     // 获取
     CChannelBase* GetChannelBase(int channelIndex);
+    CFileTransManager* GetFileManager() { return m_fileManager; }
 
     // BVCSP 的回调
     static void OnSessionEvent(BVCSP_HSession hSession, int iEventCode, void* pParam);

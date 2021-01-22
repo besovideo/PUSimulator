@@ -23,6 +23,7 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     memset(m_TSPChannels, 0x00, sizeof(m_TSPChannels));
     m_session = 0;
     m_bOnline = false;
+    m_fileManager = NULL;
     // µÇÂ¼²ÎÊý
     memset(&m_sesParam, 0x00, sizeof(m_sesParam));
     m_sesParam.iSize = sizeof(m_sesParam);
@@ -498,6 +499,13 @@ BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, B
         CPUSessionBase* pSession = (CPUSessionBase*)sesInfo.stParam.pUserData;
         if (pSession == 0 || pParam->hSession != pSession->m_session)
             return BVCU_RESULT_E_BADREQUEST;
+        if (pParam->stTarget.iIndexMajor == BVCU_SUBDEV_INDEXMAJOR_DOWNLOAD)
+        {
+            if (pSession->m_fileManager != 0)
+                return pSession->m_fileManager->OnDialogCmd_BVCSP(hDialog, iEventCode, pParam);
+            else
+                return BVCU_RESULT_E_BADREQUEST;
+        }
         CChannelBase::g_bvcsp_onevent = pParam->OnEvent;
         CChannelBase* pChannel = pSession->GetChannelBase(pParam->stTarget.iIndexMajor);
         if (pChannel)

@@ -19,3 +19,6 @@ public:
 // 获取网卡地址
 int u_getMacAddress(MacAddressInfo& data);
 
+int Utf8ToAnsi(char* _dir, int _len, const char* _src);
+int AnsiToUtf8(char* _dir, int _len, const char* _src);
+

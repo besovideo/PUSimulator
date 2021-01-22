@@ -98,3 +98,83 @@ int u_getMacAddress(MacAddressInfo& data)
     return 0;
 }
 #endif
+
+int Utf8ToAnsi(char* _dir, int _len, const char* _src)
+{
+#ifdef _MSC_VER
+    int len = MultiByteToWideChar(CP_UTF8, 0, _src, -1, 0, 0);
+    wchar_t* wchar = new wchar_t[len + 1];
+    if (NULL == wchar) {
+        _dir[0] = 0;
+        return FALSE;
+    }
+
+    MultiByteToWideChar(CP_UTF8, 0, _src, -1, wchar, len);
+    WideCharToMultiByte(CP_ACP, 0, wchar, -1, _dir, _len, NULL, NULL);
+    delete wchar;
+#else
+    size_t inlen = 0, outlen = _len;
+    do {
+        iconv_t cd = 0;
+        cd = iconv_open("UTF-8", "GBK18030");
+        if (cd == 0 || cd == (iconv_t)-1)
+            break;
+        iconv_close(cd);
+        cd = iconv_open("GBK18030", "UTF-8");
+        if (cd == 0 || cd == (iconv_t)-1)
+            break;
+        inlen = strlen(_src) + 1;
+        if (iconv(cd, (char**)(&_src), &inlen, &_dir, &outlen) == -1)
+        {
+            iconv_close(cd);
+            break;
+        }
+        iconv_close(cd);
+        return TRUE;
+    } while (0);
+    strncpy_s(_dir, _len, _src, _TRUNCATE);
+    printf("iconv(utf82ansi) failed! %d src=%s\r\n", errno, _src);
+    return FALSE;
+#endif
+    return TRUE;
+}
+int AnsiToUtf8(char* _dir, int _len, const char* _src)
+{
+#ifdef _MSC_VER
+    int len = MultiByteToWideChar(CP_ACP, 0, _src, -1, 0, 0);
+    wchar_t* wchar = new wchar_t[len + 1];
+    if (NULL == wchar) {
+        _dir[0] = 0;
+        return FALSE;
+    }
+
+    MultiByteToWideChar(CP_ACP, 0, _src, -1, wchar, len);
+    WideCharToMultiByte(CP_UTF8, 0, wchar, -1, _dir, _len, NULL, NULL);
+    delete wchar;
+#else
+    size_t inlen = 0, outlen = _len;
+    do {
+        iconv_t cd = 0;
+        cd = iconv_open("GBK18030", "UTF-8");
+        if (cd == 0 || cd == (iconv_t)-1)
+            break;
+        iconv_close(cd);
+        cd = iconv_open("UTF-8", "GBK18030");
+        if (cd == 0 || cd == (iconv_t)-1)
+            break;
+        inlen = strlen(_src) + 1;
+        if (iconv(cd, (char**)(&_src), &inlen, &_dir, &outlen) == -1)
+        {
+            iconv_close(cd);
+            break;
+        }
+        iconv_close(cd);
+        return TRUE;
+    } while (0);
+    strncpy_s(_dir, _len, _src, _TRUNCATE);
+    printf("iconv(ansi2utf8) failed! %d src=%s\r\n", errno, _src);
+    return FALSE;
+#endif
+    return TRUE;
+}
+
