@@ -5,7 +5,7 @@
 
 #define VIDEO_FILE_PATH_NAME "./h264_320x256.264"
 #define AUDIO_FILE_PATH_NAME "./8000Hz_1Ch_16bit_32kbps.g726"
-// 串口 通道
+// 音视频 通道
 class CMediaChannel : public CAVChannelBase
 {
 public:
@@ -19,7 +19,8 @@ public:
 
 protected:
     int m_interval;   // 上报数据时间间隔，毫秒。// 用于模拟收到音视频输入数据
-    int m_lasttime;   // 上次上报时间时间。毫秒。GetTickCount();
+    int m_lasttime;   // 上次上报时间。毫秒。GetTickCount();
+    int m_lastAdjtime;   // 上次调整码率时间。毫秒。GetTickCount();
     long long m_pts;  // 上次时间戳。
     FILE* m_audioFile;// 音频输入文件
     FILE* m_videoFile;// 音频输入文件
@@ -30,5 +31,5 @@ protected:
 public:
     CMediaChannel();
     virtual ~CMediaChannel() {}
-    void SendData();  // 模拟收到串口数据，发送给平台。
+    void SendData();  // 模拟收到音视频编码后数据，发送给平台。
 };

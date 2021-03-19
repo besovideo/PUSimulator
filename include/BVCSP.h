@@ -387,9 +387,9 @@ typedef struct _BVCSP_DialogInfo{
     // 发送数据，网络部分短时间时间统计数据 
     int iVideoLostRateShortTerm_Send;
     int iAudioLostRateShortTerm_Send;
-    int iVideoRecvFPSShortTerm_Send;
     int iVideoKbpsShortTerm_Send;
     int iAudioKbpsShortTerm_Send;
+    int iGuessBandwidthSend; // 库内评估的上行带宽，单位 Kbits/second。 > 0 时有效。
 }BVCSP_DialogInfo;
 
 typedef struct _BVCSP_Event_DialogCmd

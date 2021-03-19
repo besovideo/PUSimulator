@@ -14,6 +14,7 @@ CMediaChannel::CMediaChannel()
     LoadConfig(&puconfig);
     SetName(puconfig.mediaName);
     m_lasttime = 0;
+    m_lastAdjtime = 0;
     m_pts = 0;
     m_audioFile = 0;
     m_videoFile = 0;
@@ -155,6 +156,19 @@ void CMediaChannel::SendData()
             //printf("send audio Data, %d\n", len);
         }
     }
+    // =======================  获取网络发送统计数据，根据猜测码率，动态调整编码码率（这里是假的）。
+    dely = now - m_lastAdjtime;
+    if (dely >= 2 * 1000 || m_lastAdjtime == 0)
+    {
+        m_lastAdjtime = now;
+        BVCSP_DialogInfo dlgInfo;
+        memset(&dlgInfo, 0x00, sizeof(dlgInfo));
+        BVCU_Result result = BVCSP_GetDialogInfo(m_hDialog, &dlgInfo);
+        if (BVCU_Result_SUCCEEDED(result))
+        {
+            printf("================  guess bandwidth = %d kbps\n", dlgInfo.iGuessBandwidthSend);
+        }
+    }
 }
 
 BVCU_Result CMediaChannel::OnSetName(const char* name)
@@ -211,6 +225,7 @@ void CMediaChannel::OnClose()
     // 这里应该可以关闭您的音视频输入设备了。
     printf("================  media closed \n");
     m_lasttime = 0;
+    m_lastAdjtime = 0;
     if (m_audioFile)
     {
         fclose(m_audioFile);
