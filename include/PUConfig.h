@@ -983,6 +983,8 @@ typedef struct _BVCU_PUCFG_ManualRecord{
     int bStart; // 1-开始录像，0-停止录像
     int iLength;// 存储时间长度，单位秒， -1表示一直录像
     char szFileName[128]; // 录像文件名称。
+    int iChannelIndex;//通道号, BVCU_SUBDEV_INDEXMAJOR_*
+    int iFileType;    //录像文件类型，BVCU_STORAGE_FILE_TYPE_*组合
 }BVCU_PUCFG_ManualRecord;
 
 // 手工抓拍，保存到PU

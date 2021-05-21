@@ -237,6 +237,15 @@ void CMediaChannel::OnClose()
         m_videoFile = 0;
     }
 }
+void CMediaChannel::OnPLI()
+{
+    // 这里应该通知您的视频编码器生成关键帧。
+    printf("================  media pli \n");
+    if (m_videoFile)
+    {   // 这里跳转到文件开始位置，是因为 文件开始位置是关键帧。
+        fseek(m_videoFile, 0, SEEK_SET);
+    }
+}
 void CMediaChannel::OnRecvAudio(long long iPTS, const void* pkt, int len)
 {
     printf("================  media recv audio. len: %d \n", len);

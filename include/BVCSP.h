@@ -33,6 +33,7 @@ typedef enum _BVCSP_DIALOG_EVENT
     BVCSP_EVENT_DIALOG_OPEN = 1,    // 创建Dialog。
     BVCSP_EVENT_DIALOG_UPDATE,      // 更新Dialog。
     BVCSP_EVENT_DIALOG_CLOSE,       // 关闭Dialog。
+    BVCSP_EVENT_DIALOG_PLIKEY,      // PLI请求关键帧。
 }BVCSP_DIALOG_EVENT;
 
 // Client Type

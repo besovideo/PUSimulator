@@ -483,12 +483,12 @@ typedef enum _BVCU_SUBMETHOD_TYPE{
     BVCU_SUBMETHOD_REGION_SET, //修改CMS区域。输入类型：BVCU_Region_Info;输出类型：无;
     BVCU_SUBMETHOD_REGION_DEL, //删除CMS区域。输入类型：BVCU_Region_Base;输出类型：无;触发类型：同名Notify
 
-    BVCU_SUBMETHOD_ROUTEPATH_ADD, //添加CMS区域。输入类型：BVCU_Route_Path;输出类型：无;触发类型：同名Notify
-    BVCU_SUBMETHOD_ROUTEPATH_SET, //修改CMS区域。输入类型：BVCU_Route_Path;输出类型：无;触发类型：同名Notify
-    BVCU_SUBMETHOD_ROUTEPATH_DEL, //删除CMS区域。输入类型：BVCU_Route_Path;输出类型：无;触发类型：同名Notify
-    BVCU_SUBMETHOD_ROUTEPLAN_ADD, //添加CMS区域。输入类型：BVCU_Route_Plan;输出类型：无;触发类型：同名Notify
-    BVCU_SUBMETHOD_ROUTEPLAN_SET, //修改CMS区域。输入类型：BVCU_Route_Plan;输出类型：无;触发类型：同名Notify
-    BVCU_SUBMETHOD_ROUTEPLAN_DEL, //删除CMS区域。输入类型：BVCU_Route_Plan;输出类型：无;触发类型：同名Notify
+    BVCU_SUBMETHOD_ROUTEPATH_ADD, //添加线路规划线路。输入类型：BVCU_Route_Path;输出类型：无;触发类型：同名Notify
+    BVCU_SUBMETHOD_ROUTEPATH_SET, //修改线路规划线路。输入类型：BVCU_Route_Path;输出类型：无;触发类型：同名Notify
+    BVCU_SUBMETHOD_ROUTEPATH_DEL, //删除线路规划线路。输入类型：BVCU_Route_Path;输出类型：无;触发类型：同名Notify
+    BVCU_SUBMETHOD_ROUTEPLAN_ADD, //添加线路规划计划。输入类型：BVCU_Route_Plan;输出类型：无;触发类型：同名Notify
+    BVCU_SUBMETHOD_ROUTEPLAN_SET, //修改线路规划计划。输入类型：BVCU_Route_Plan;输出类型：无;触发类型：同名Notify
+    BVCU_SUBMETHOD_ROUTEPLAN_DEL, //删除线路规划计划。输入类型：BVCU_Route_Plan;输出类型：无;触发类型：同名Notify
 
     //UKey管理------------------
     BVCU_SUBMETHOD_UKEY_ADD = 0x23000, //添加授权UKey。输入类型：BVCU_UCFG_UKeyInfo;输出类型：无;

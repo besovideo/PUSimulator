@@ -328,12 +328,22 @@ void CPUSessionBase::OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_
         CChannelBase* pChannel = pSession->GetChannelBase(pDialogParam->stTarget.iIndexMajor);
         if (pChannel == 0 || pChannel->GetHDialog() != hDialog)
             return;
-        if (iEventCode == BVCSP_EVENT_DIALOG_OPEN && BVCU_Result_SUCCEEDED(pParam->iResult))
-            pChannel->OnOpen();
-        else if (iEventCode != BVCSP_EVENT_DIALOG_UPDATE)
+        if (iEventCode == BVCSP_EVENT_DIALOG_OPEN) {
+            if (BVCU_Result_SUCCEEDED(pParam->iResult))
+                pChannel->OnOpen();
+            else {
+                pChannel->SetHialog(0, 0);
+                pChannel->OnClose();
+            }
+        }
+        else if (iEventCode == BVCSP_EVENT_DIALOG_CLOSE)
         {
             pChannel->SetHialog(0, 0);
             pChannel->OnClose();
+        }
+        else if (iEventCode == BVCSP_EVENT_DIALOG_PLIKEY)
+        {   // ÇëÇó¹Ø¼üÖ¡
+            pChannel->OnPLI();
         }
     }
 }

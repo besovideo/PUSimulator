@@ -149,6 +149,13 @@ void CGPSChannel::OnClose()
     printf("================  gps closed \n");
     return ;
 }
+void CGPSChannel::OnPLI()
+{
+    // GPS收到PLI请求，是因为有新成员打开通道，但没有收到数据(因为设备只上传一路流，其他的打开请求被服务器处理了)。
+    // 此时应该立即将最新的定位信息发送出去
+    printf("================  gps pli \n");
+    UpdateData();
+}
 const BVCU_PUCFG_GPSData* CGPSChannel::OnGetGPSData()
 {   // 从设备中读取GPS位置并返回
     ReadGPSData();

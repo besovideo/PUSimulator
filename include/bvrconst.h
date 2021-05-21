@@ -62,6 +62,8 @@ typedef enum BVRAuthResult {
     AU_Result_Pause_Authorization = 107, //暂停授权, 后期可能恢复
     AU_Result_Login_Elsewhere = 108, // 在其它处登录
     AU_Result_Cert_UseUp = 109, // 证书授权次数用完
+    AU_Result_Error_Key_Id = 110, // 错误的keyid(key_id在默认列表中)
+    AU_Result_Key_Id_NotMatch = 111, // login.key_id和db.key_id不匹配
 
     AUTh_Result_KeepAlive_No_Token = 151, // 保活时服务器没有token
     AUTh_Result_KeepAlive_No_Session = 152,  //连接不存在

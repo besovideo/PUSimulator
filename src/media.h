@@ -14,6 +14,7 @@ public:
     virtual BVCU_Result OnOpenRequest();   // 收到打开请求，回复是否同意，0：同意
     virtual void OnOpen();   // 建立通道连接成功通知
     virtual void OnClose();  // 通道连接关闭通知
+    virtual void OnPLI();    // 收到生成关键帧请求
     virtual void OnRecvAudio(long long iPTS, const void* pkt, int len);   // 收到平台发来的音频数据。编码信息同ReplySDP()。
     virtual BVCU_Result OnPTZCtrl(const BVCU_PUCFG_PTZControl* ptzCtrl);   // 收到平台发来的云台控制命令。
 

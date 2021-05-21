@@ -9,6 +9,7 @@ public:
     virtual BVCU_Result OnOpenRequest() = 0;   // 收到打开请求，回复是否同意，0：同意
     virtual void OnOpen() = 0;   // 建立通道连接成功通知
     virtual void OnClose() = 0;  // 通道连接关闭通知
+    virtual void OnPLI() = 0;    // 收到生成关键帧请求
 
 protected:
     int m_index; // 硬件索引，从0开始编号，可以由session注册时分配（这时每个通道注册顺序不能变化）。
@@ -93,7 +94,7 @@ public:
     virtual void OnRecvData(const void* pkt, int len) = 0;   // 收到平台发给串口的数据。
     virtual const BVCU_PUCFG_SerialPort* OnGetTSPParam() = 0; // 收到查询配置
     virtual BVCU_Result OnSetTSPParam(const BVCU_PUCFG_SerialPort* pParam) = 0; // 收到修改配置
-
+    virtual void OnPLI() {}
 public:
     CTSPChannelBase();
     virtual ~CTSPChannelBase() {}
