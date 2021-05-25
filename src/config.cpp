@@ -37,6 +37,9 @@ void LoadConfig(PUConfig* pConfig)
         pConfig->interval = DEFAULT_GPS_INTERVAL;
     GetPrivateProfileStringA("gps", "name", "GPS", pConfig->gpsName, sizeof(pConfig->gpsName), CONFIG_FILE_PATH_NAME);
     GetPrivateProfileStringA("media", "name", "", pConfig->mediaName, sizeof(pConfig->mediaName), CONFIG_FILE_PATH_NAME);
+    GetPrivateProfileStringA("media", "audio", "", pConfig->audioFile, sizeof(pConfig->audioFile), CONFIG_FILE_PATH_NAME);
+    if (pConfig->audioFile[0] == 0)
+        strcpy(pConfig->audioFile, "8k_1_16.g711a");
 }
 
 int SetConfig(const PUConfig* pConfig)
@@ -57,6 +60,7 @@ int SetConfig(const PUConfig* pConfig)
     WritePrivateProfileStringA("gps", "interval", tempbuf, CONFIG_FILE_PATH_NAME);
     WritePrivateProfileStringA("gps", "name", pConfig->gpsName, CONFIG_FILE_PATH_NAME);
     WritePrivateProfileStringA("media", "name", pConfig->mediaName, CONFIG_FILE_PATH_NAME);
+    WritePrivateProfileStringA("media", "audio", pConfig->audioFile, CONFIG_FILE_PATH_NAME);
     return 0;
 }
 #else
@@ -67,6 +71,7 @@ void LoadConfig(PUConfig* pConfig)
     strncpy_s(pConfig->serverIP, DEFAULT_SERVERIP);
     strncpy_s(pConfig->gpsName, "GPS");
     strncpy_s(pConfig->mediaName, "0");
+    strncpy_s(pConfig->audioFile, "8k_1_16.g711a");
     pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = DEFAULT_PROTOTYPE;
     pConfig->lat = 200 * 10000000;

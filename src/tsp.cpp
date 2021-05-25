@@ -30,6 +30,7 @@ void CTSPChannel::SendData()
 
 BVCU_Result CTSPChannel::OnSetName(const char* name)
 {
+    printf("================  tsp set name. %s \n", name);
     SetName(name);
     return BVCU_RESULT_S_OK;
 }
@@ -64,6 +65,7 @@ void CTSPChannel::OnRecvData(const void* pkt, int len)
 }
 const BVCU_PUCFG_SerialPort* CTSPChannel::OnGetTSPParam()
 {
+    printf("================  tsp get param. \n");
     static BVCU_PUCFG_SerialPort param;
     memset(&param, 0x00, sizeof(param));
     param.iAddress = 1;
@@ -77,5 +79,6 @@ const BVCU_PUCFG_SerialPort* CTSPChannel::OnGetTSPParam()
 }
 BVCU_Result CTSPChannel::OnSetTSPParam(const BVCU_PUCFG_SerialPort* pParam)
 {
+    printf("================  tsp set param. baudrate: %d \n", pParam->stRS232.iBaudRate);
     return BVCU_RESULT_S_OK;
 }

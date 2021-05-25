@@ -4,7 +4,6 @@
 #include "base/dialog.h"
 
 #define VIDEO_FILE_PATH_NAME "./h264_320x256.264"
-#define AUDIO_FILE_PATH_NAME "./8000Hz_1Ch_16bit_32kbps.g726"
 // 音视频 通道
 class CMediaChannel : public CAVChannelBase
 {
@@ -23,6 +22,7 @@ protected:
     int m_lasttime;   // 上次上报时间。毫秒。GetTickCount();
     int m_lastAdjtime;   // 上次调整码率时间。毫秒。GetTickCount();
     long long m_pts;  // 上次时间戳。
+    int m_audioPackLen; // 每个音频帧数据大小
     FILE* m_audioFile;// 音频输入文件
     FILE* m_videoFile;// 音频输入文件
 

@@ -18,6 +18,7 @@ CMediaChannel::CMediaChannel()
     m_pts = 0;
     m_audioFile = 0;
     m_videoFile = 0;
+    m_audioPackLen = 320;
 }
 
 static char* findhead(char* data, int len) {
@@ -92,16 +93,16 @@ char* CMediaChannel::ReadAudio(char* buf, int* len)
 {
     int buflen = *len;
     *len = 0;
-    if (buflen < 160 || m_audioFile == 0)
+    if (buflen < m_audioPackLen || m_audioFile == 0)
         return 0;
-    int readlen = fread(buf, 1, 160, m_audioFile);
-    if (readlen < 160)
+    int readlen = fread(buf, 1, m_audioPackLen, m_audioFile);
+    if (readlen < m_audioPackLen)
     { // 可能读到文件结尾了，从头再来
         fseek(m_audioFile, 0, SEEK_SET);
-        readlen = fread(buf, 1, 160, m_audioFile);
+        readlen = fread(buf, 1, m_audioPackLen, m_audioFile);
     }
-    if (readlen == 160)
-        *len = 160;
+    if (readlen == m_audioPackLen)
+        *len = m_audioPackLen;
     return buf;
 }
 void CMediaChannel::Reply()
@@ -117,7 +118,10 @@ void CMediaChannel::Reply()
         videoSdp.codec = SAVCODEC_ID_H264;
         videoSdp.pExtraData = videoEx;
         videoSdp.iExtraDataSize = videoExLen;
-        audioSdp.codec = SAVCODEC_ID_G726;
+        if (m_audioPackLen == 160)
+            audioSdp.codec = SAVCODEC_ID_G726;
+        else
+            audioSdp.codec = SAVCODEC_ID_G711A;
         audioSdp.iBitrate = 32000;
         audioSdp.iChannelCount = 1;
         audioSdp.iSampleRate = 8000;
@@ -134,10 +138,16 @@ void CMediaChannel::SendData()
     // ========================  定时从设备中获取最新位置，并上报， 下面是模拟位置
     int now = GetTickCount();
     int dely = now - m_lasttime;
-    if (dely >= m_interval || dely < 0)
+    if (dely < 0) {
+        dely = m_interval;
+        m_lasttime = now - m_interval;
+    }
+    while (dely >= m_interval)
     {
-        m_lasttime = now;
-        m_pts = m_pts + dely * 1000;
+        m_lasttime += m_interval;
+        dely -= m_interval;
+
+        m_pts = m_pts + m_interval * 1000;
         static char g_packetbuf[1 * 1024 * 1024]; // 这里限制了一个帧的大小不要超过 1M，因为自带的音视频文件中帧数据都很小。
         if (m_audioFile != 0)
         {  // 音频被打开了，发送音频数据。
@@ -173,6 +183,7 @@ void CMediaChannel::SendData()
 
 BVCU_Result CMediaChannel::OnSetName(const char* name)
 {
+    printf("================  media set name. %s \n", name);
     PUConfig puconfig;
     LoadConfig(&puconfig);
     strncpy_s(puconfig.mediaName, sizeof(puconfig.mediaName), name, _TRUNCATE);
@@ -198,9 +209,15 @@ BVCU_Result CMediaChannel::OnOpenRequest()
     }
     if (BNeedAudioIn())
     {   // 请求音频，打开音频输入设备
+        PUConfig puconfig;
+        LoadConfig(&puconfig);
         printf("================  open audio media now\n");
         if (m_audioFile == 0)
-            m_audioFile = fopen(AUDIO_FILE_PATH_NAME, "rb");
+            m_audioFile = fopen(puconfig.audioFile, "rb");
+        if (strstr(puconfig.audioFile, "g726") != nullptr)
+            m_audioPackLen = 160;
+        else
+            m_audioPackLen = 320; // g711a
     }
     else if (m_audioFile)
     {   // 不需要音频，如果已经打开，请关闭

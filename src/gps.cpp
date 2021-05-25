@@ -124,6 +124,7 @@ void CGPSChannel::UpdateData()
 
 BVCU_Result CGPSChannel::OnSetName(const char* name)
 {
+    printf("================  gps set name. %s \n", name);
     PUConfig puconfig;
     LoadConfig(&puconfig);
     strncpy_s(puconfig.gpsName, sizeof(puconfig.gpsName), name, _TRUNCATE);
@@ -158,15 +159,18 @@ void CGPSChannel::OnPLI()
 }
 const BVCU_PUCFG_GPSData* CGPSChannel::OnGetGPSData()
 {   // 从设备中读取GPS位置并返回
+    printf("================  gps get data \n");
     ReadGPSData();
     return &m_position;
 }
 const BVCU_PUCFG_GPSParam* CGPSChannel::OnGetGPSParam()
 {   // 查询GPS配置
+    printf("================  gps get param. report interval: %ds\n", m_param.iReportInterval);
     return &m_param;
 }
 BVCU_Result CGPSChannel::OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam)
 {
+    printf("================  gps set param. report interval: %ds\n", pParam->iReportInterval);
     // 设置上报间隔 等参数
     m_param.iReportInterval = pParam->iReportInterval;
     if (0 >= m_param.iReportInterval || m_param.iReportInterval <= 10 * 60)
