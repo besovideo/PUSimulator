@@ -498,6 +498,13 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 }
             }
         }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_START ||
+            pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_PARTICIPATOR_ADD ||
+            pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_PARTICIPATOR_INVITE_SPEAK)
+        {   // 语音会议相关控制命令全部自动回OK
+            pCommand->OnEvent(hSession, pCommand, &szResult);
+            return BVCU_RESULT_S_OK;
+        }
     }
     return BVCU_RESULT_E_FAILED;// 不接受这个命令处理
 }
