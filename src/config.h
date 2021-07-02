@@ -13,6 +13,7 @@
 struct PUConfig
 {
     // info
+    int  PUCount;  // 设备个数
     char ID[32];   // 设备ID号
     char Name[64]; // 设备名称
     int  lat;      // 维度，1/1000000

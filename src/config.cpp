@@ -40,6 +40,9 @@ void LoadConfig(PUConfig* pConfig)
     GetPrivateProfileStringA("media", "audio", "", pConfig->audioFile, sizeof(pConfig->audioFile), CONFIG_FILE_PATH_NAME);
     if (pConfig->audioFile[0] == 0)
         strcpy(pConfig->audioFile, "8k_1_16.g711a");
+    pConfig->PUCount = GetPrivateProfileIntA("info", "count", 1, CONFIG_FILE_PATH_NAME);
+    if (pConfig->PUCount <= 0 || pConfig->PUCount > 1024)
+        pConfig->PUCount = 1;
 }
 
 int SetConfig(const PUConfig* pConfig)
@@ -66,6 +69,7 @@ int SetConfig(const PUConfig* pConfig)
 #else
 void LoadConfig(PUConfig* pConfig)
 {
+    pConfig->PUCount = 1;
     strncpy_s(pConfig->ID, DEFAULT_ID);
     strncpy_s(pConfig->Name, DEFAULT_NAME);
     strncpy_s(pConfig->serverIP, DEFAULT_SERVERIP);
