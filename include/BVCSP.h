@@ -68,6 +68,12 @@ typedef enum _BVCSP_SESSION_STATUS
     BVCSP_SESSION_STATUS_ONLINE
 }BVCSP_SESSION_STATUS;
 
+// 会话通道控制属性
+typedef enum _BVCSP_DIALOG_OPTIONS
+{
+    BVCSP_DIALOG_OPTIONS_NOFMTP = 1 << 0, // SDP中不添加fmtp。
+}BVCSP_DIALOG_OPTIONS;
+
 typedef  void* BVCSP_HSession;
 typedef  void* BVCSP_HDialog;
 
@@ -296,7 +302,9 @@ typedef struct _BVCSP_DialogParam
 
     // 会话数据通道是否走TCP连接，0：否，1：主动TCP，2：被动TCP。over TCP时iAVStreamWay无意义  
     int bOverTCP;
-    int iReserved;
+
+    // 会话控制属性，见 BVCSP_DIALOGOPTIONS_*
+    int iOptions;
 
     //视频通话请求返回的CallID
     char szCallID[BVCU_MAX_ID_LEN + 1];

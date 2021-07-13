@@ -2,6 +2,7 @@
 #include "gps.h"
 #include "config.h"
 
+static int g_count = 0;
 
 CGPSChannel::CGPSChannel()
 {
@@ -20,8 +21,25 @@ CGPSChannel::CGPSChannel()
     m_lng = puconfig.lng;
     SetName(puconfig.gpsName);
     m_lasttime = time(NULL) - puconfig.interval;
-    m_position.iLatitude = m_lat + (rand() % 999999) * sin((float)rand()) + 100000;
-    m_position.iLongitude = m_lng + (rand() % 999999) * sin((float)rand()) + 100000;
+    srand(m_lasttime);
+    int randLat = rand() + 100000*g_count;
+    int randLng = rand() + 100000*g_count;
+    int imod = g_count % 4;
+    if (imod == 0)
+    {
+        m_position.iLatitude = m_lat + randLat;
+        m_position.iLongitude = m_lng + randLng;
+    }else if (imod == 1){
+        m_position.iLatitude = m_lat - randLat;
+        m_position.iLongitude = m_lng + randLng;
+    }else if (imod == 2) {
+        m_position.iLatitude = m_lat + randLat;
+        m_position.iLongitude = m_lng - randLng;
+    }else{
+        m_position.iLatitude = m_lat - randLat;
+        m_position.iLongitude = m_lng - randLng;
+    }
+    g_count++;
     m_chagedu = abs(m_lng - m_position.iLongitude) + abs(m_lat - m_position.iLatitude);
 
     // GPS ²ÎÊý
@@ -48,7 +66,7 @@ bool CGPSChannel::ReadGPSData()
     {
         if (m_position.iLatitude > m_lat)
         {
-            m_position.iLongitude += 20000;
+            m_position.iLongitude += 2000;
             if (m_position.iLongitude > m_lng + m_chagedu)
             {
                 m_position.iLongitude = m_lng + m_chagedu;
@@ -57,14 +75,14 @@ bool CGPSChannel::ReadGPSData()
             }
             else
             {
-                m_position.iLatitude -= 20000;
+                m_position.iLatitude -= 2000;
                 m_position.iAngle = 135000;
             }
         }
         else
         {
-            m_position.iLongitude -= 20000;
-            m_position.iLatitude -= 20000;
+            m_position.iLongitude -= 2000;
+            m_position.iLatitude -= 2000;
             m_position.iAngle = 225000;
         }
     }
@@ -72,14 +90,14 @@ bool CGPSChannel::ReadGPSData()
     {
         if (m_position.iLatitude > m_lat)
         {
-            m_position.iLongitude += 20000;
-            m_position.iLatitude -= 20000;
+            m_position.iLongitude += 2000;
+            m_position.iLatitude -= 2000;
             m_position.iAngle = 135000;
         }
         else
         {
-            m_position.iLongitude -= 20000;
-            m_position.iLatitude += 20000;
+            m_position.iLongitude -= 2000;
+            m_position.iLatitude += 2000;
             m_position.iAngle = 315000;
         }
     }
@@ -87,20 +105,20 @@ bool CGPSChannel::ReadGPSData()
     {
         if (m_position.iLatitude >= m_lat)
         {
-            m_position.iLongitude += 20000;
-            m_position.iLatitude += 20000;
+            m_position.iLongitude += 2000;
+            m_position.iLatitude += 2000;
             m_position.iAngle = 45000;
         }
         else
         {
-            m_position.iLongitude -= 20000;
+            m_position.iLongitude -= 2000;
             if (m_position.iLongitude < m_lng - m_chagedu)
             {
                 m_position.iLongitude = m_lng - m_chagedu;
                 m_position.iLatitude = m_lat;
                 m_position.iAngle = 225000;
             }
-            m_position.iLatitude += 20000;
+            m_position.iLatitude += 2000;
             m_position.iAngle = 315000;
         }
     }

@@ -21,6 +21,7 @@ protected:
     int m_interval;   // 上报数据时间间隔，毫秒。// 用于模拟收到音视频输入数据
     int m_lasttime;   // 上次上报时间。毫秒。GetTickCount();
     int m_lastAdjtime;   // 上次调整码率时间。毫秒。GetTickCount();
+    int m_lastPlitime;   // 上次产生关键帧时间。毫秒。GetTickCount();
     long long m_pts;  // 上次时间戳。
     int m_audioPackLen; // 每个音频帧数据大小
     FILE* m_audioFile;// 音频输入文件

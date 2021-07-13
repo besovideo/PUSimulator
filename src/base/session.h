@@ -1,5 +1,6 @@
 #pragma once
 #include "PUConfig.h"
+#include "BVEvent.h"
 #include "BVCSP.h"
 
 #include "dialog.h"
@@ -31,6 +32,9 @@ public:
     int  Login(int through, int lat, int lng);
     int  Logout();    // 下线
     bool BOnline() { return m_bOnline; }  // 是否已经上线。
+
+    // 给服务器发请求. 报警类型，子设备号，报警值，是否是结束报警，报警描述。
+    int  SendAlarm(int alarmType, int index, int value, int bEnd, const char* desc);    // 下线
 
     // 设置设备信息
     void SetName(const char* Name);  // 设备名称

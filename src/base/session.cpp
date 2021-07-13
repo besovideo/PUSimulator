@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "session.h"
 
 #ifdef _MSC_VER
@@ -255,6 +256,54 @@ int CPUSessionBase::Logout()
     m_bOnline = false;
     return 0;
 }
+
+int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, const char* desc)
+{
+    if (m_session)
+    {
+        BVCU_Event_Source eventAlarm;
+        memset(&eventAlarm, 0x00, sizeof(eventAlarm));
+        eventAlarm.iEventType = alarmType;// BVCU_EVENT_TYPE_ALERTIN;
+        eventAlarm.iSubDevIdx = index;
+        eventAlarm.iValue = value;
+        eventAlarm.bEnd = bEnd;
+        if (desc)
+            strncpy_s(eventAlarm.szEventDesc, sizeof(eventAlarm.szEventDesc), desc, _TRUNCATE);
+        if (m_GPSChannels[0])
+        {  // 如果有GPS模块，获取当前定位。
+            const BVCU_PUCFG_GPSData* gps = m_GPSChannels[0]->OnGetGPSData();
+            if (gps)
+            {
+                eventAlarm.iLongitude = gps->iLongitude;
+                eventAlarm.iLatitude = gps->iLatitude;
+            }
+        }
+        strncpy_s(eventAlarm.szDevID, sizeof(eventAlarm.szDevID), m_deviceInfo.szID, _TRUNCATE);
+        {
+            time_t now = time(NULL);  // 时间应该也是从GPS设备中读取
+            tm* ptm = (tm*)gmtime(&now);  // 初特殊说明，网传的时间都是UTC时间。
+            eventAlarm.stTime.iYear = ptm->tm_year + 1900;
+            eventAlarm.stTime.iMonth = ptm->tm_mon + 1;
+            eventAlarm.stTime.iDay = ptm->tm_mday;
+            eventAlarm.stTime.iHour = ptm->tm_hour;
+            eventAlarm.stTime.iMinute = ptm->tm_min;
+            eventAlarm.stTime.iSecond = ptm->tm_sec;
+        }
+
+        BVCSP_Notify notify;
+        memset(&notify, 0x00, sizeof(notify));
+        notify.iSize = sizeof(notify);
+        notify.stMsgContent.iSize = sizeof(notify.stMsgContent);
+        notify.stMsgContent.iSubMethod = BVCU_SUBMETHOD_EVENT_NOTIFY;
+        notify.stMsgContent.stMsgContent.iDataCount = 1;
+        notify.stMsgContent.stMsgContent.pData = &eventAlarm;
+        BVCU_Result bvResult = BVCSP_SendNotify(m_session, &notify);
+        printf("Call BVCSP_SendNotify code:%d session:%p\n", bvResult, m_session);
+        return bvResult;
+    }
+    return BVCU_RESULT_E_BADREQUEST;
+}
+
 
 CChannelBase* CPUSessionBase::GetChannelBase(int channelIndex)
 {

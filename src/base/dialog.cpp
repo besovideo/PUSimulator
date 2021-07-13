@@ -82,6 +82,7 @@ BVCU_Result CAVChannelBase::ReplySDP(BVCU_Result result, const BVCSP_VideoCodec*
         }
         pParam->afterRecv = CPUSessionBase::afterDialogRecv;
         pParam->OnEvent = CPUSessionBase::OnDialogEvent;
+        //pParam->iOptions |= BVCSP_DIALOG_OPTIONS_NOFMTP;
         BVCSP_Event_DialogCmd rep;
         rep.iResult = result;
         rep.pDialogParam = pParam;

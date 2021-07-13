@@ -15,6 +15,7 @@ CMediaChannel::CMediaChannel()
     SetName(puconfig.mediaName);
     m_lasttime = 0;
     m_lastAdjtime = 0;
+    m_lastPlitime = 0;
     m_pts = 0;
     m_audioFile = 0;
     m_videoFile = 0;
@@ -243,6 +244,7 @@ void CMediaChannel::OnClose()
     printf("================  media closed \n");
     m_lasttime = 0;
     m_lastAdjtime = 0;
+    m_lastPlitime = 0;
     if (m_audioFile)
     {
         fclose(m_audioFile);
@@ -258,9 +260,15 @@ void CMediaChannel::OnPLI()
 {
     // 这里应该通知您的视频编码器生成关键帧。
     printf("================  media pli \n");
-    if (m_videoFile)
-    {   // 这里跳转到文件开始位置，是因为 文件开始位置是关键帧。
-        fseek(m_videoFile, 0, SEEK_SET);
+    int now = GetTickCount();
+    int dely = now - m_lastPlitime;
+    if (dely >= 2 * 1000 || m_lastPlitime == 0)
+    {
+        m_lastPlitime = now;
+        if (m_videoFile)
+        {   // 这里跳转到文件开始位置，是因为 文件开始位置是关键帧。
+            fseek(m_videoFile, 0, SEEK_SET);
+        }
     }
 }
 void CMediaChannel::OnRecvAudio(long long iPTS, const void* pkt, int len)

@@ -130,6 +130,7 @@ int Login(bool autoOption)
     return 0;
 }
 
+// 退出登录
 int Logout()
 {
     bool bFind = false;
@@ -138,6 +139,29 @@ int Logout()
         if (pSession[i] != 0)
         {
             pSession[i]->Logout();
+            bFind = true;
+        }
+    }
+    if (bFind)
+        return 0;
+    return -1;
+}
+
+// 发送报警信息
+int SendAlarm()
+{
+    bool bFind = false;
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    {
+        if (pSession[i] != 0)
+        {
+            pSession[i]->SendAlarm(
+                BVCU_EVENT_TYPE_ALERTIN,
+                0,
+                0,
+                0,
+                "test"
+            );
             bFind = true;
         }
     }
