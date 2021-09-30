@@ -303,7 +303,7 @@ typedef struct _BVCSP_DialogParam
     // 会话数据通道是否走TCP连接，0：否，1：主动TCP，2：被动TCP。over TCP时iAVStreamWay无意义  
     int bOverTCP;
 
-    // 会话控制属性，见 BVCSP_DIALOGOPTIONS_*
+    // 会话控制属性，见 BVCSP_DIALOG_OPTIONS*
     int iOptions;
 
     //视频通话请求返回的CallID

@@ -26,7 +26,7 @@ unsigned __stdcall Wall_App(void*)
     while (true)
     {
         HandleEvent();
-        Sleep(5);
+        BVCSP_HandleEvent();
     }
     return 0;
 }
@@ -35,12 +35,12 @@ int main()
 {
     // 初始化库
     BVCSP_SetLogCallback(Log_Callback, BVCU_LOG_LEVEL_INFO);
-    BVCSP_Initialize(1,0);
+    BVCSP_Initialize(0,0);
+
+    _beginthreadex(NULL, 0, Wall_App, NULL, 0, NULL);
 
     // 开始认证
     Auth();
-
-    _beginthreadex(NULL, 0, Wall_App, NULL, 0, NULL);
 
     while(1)
     {

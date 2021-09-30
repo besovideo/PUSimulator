@@ -96,20 +96,34 @@ char* CMediaChannel::ReadAudio(char* buf, int* len)
     *len = 0;
     if (buflen < m_audioPackLen || m_audioFile == 0)
         return 0;
-    int readlen = fread(buf, 1, m_audioPackLen, m_audioFile);
-    if (readlen < m_audioPackLen)
+    int packlen = m_audioPackLen;
+    if (m_audioPackLen == 2048) // maac, 读取包长度
+    {
+        int readlen = fread(&packlen, 1, 4, m_audioFile);
+        if (readlen < 4)
+            packlen = 0;
+    }
+    if (packlen <= 0 || packlen > buflen)
+    {  // 读取到的 包大小错误
+        fseek(m_audioFile, 0, SEEK_SET);
+        return 0;
+    }
+    int readlen = fread(buf, 1, packlen, m_audioFile);
+    if (readlen < packlen)
     { // 可能读到文件结尾了，从头再来
         fseek(m_audioFile, 0, SEEK_SET);
-        readlen = fread(buf, 1, m_audioPackLen, m_audioFile);
+        readlen = fread(buf, 1, packlen, m_audioFile);
     }
-    if (readlen == m_audioPackLen)
-        *len = m_audioPackLen;
+    if (readlen == packlen)
+        *len = packlen;
     return buf;
 }
 void CMediaChannel::Reply()
 {
     static char videoEx[64] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x80, 0x1E, 0xDA, 0x05, 0x02, 0x11, 0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80 };
     static int  videoExLen = 20;
+    static char audioEx[2] = { 0x12, 0x88 };
+    // 以上扩展数据，都是根据自带 音视频文件数据编码参数写死的，修改数据来源时，需要根据您的数据源确定。
     if (m_bOpening)
     {
         BVCSP_VideoCodec videoSdp;
@@ -119,14 +133,21 @@ void CMediaChannel::Reply()
         videoSdp.codec = SAVCODEC_ID_H264;
         videoSdp.pExtraData = videoEx;
         videoSdp.iExtraDataSize = videoExLen;
-        if (m_audioPackLen == 160)
-            audioSdp.codec = SAVCODEC_ID_G726;
-        else
-            audioSdp.codec = SAVCODEC_ID_G711A;
         audioSdp.iBitrate = 32000;
         audioSdp.iChannelCount = 1;
         audioSdp.iSampleRate = 8000;
         audioSdp.eSampleFormat = SAV_SAMPLE_FMT_S16;
+        if (m_audioPackLen == 160)
+            audioSdp.codec = SAVCODEC_ID_G726;
+        else if (m_audioPackLen == 2048)
+        {
+            audioSdp.codec = SAVCODEC_ID_AAC;
+            audioSdp.iBitrate = 64000;
+            audioSdp.iSampleRate = 32000;
+            audioSdp.pExtraData = audioEx;
+            audioSdp.iExtraDataSize = 2;
+        }else
+            audioSdp.codec = SAVCODEC_ID_G711A;
 
         ReplySDP(BVCU_RESULT_S_OK, &videoSdp, &audioSdp);
     }
@@ -217,7 +238,11 @@ BVCU_Result CMediaChannel::OnOpenRequest()
             m_audioFile = fopen(puconfig.audioFile, "rb");
         if (strstr(puconfig.audioFile, "g726") != nullptr)
             m_audioPackLen = 160;
-        else
+        else if (strstr(puconfig.audioFile, "maac") != nullptr)
+        {
+            m_audioPackLen = 2048; // maac 长度在文件中。
+            m_interval = 32; // 自带的 maac的音频间隔是32毫秒，根据你的数据源决定。
+        }else
             m_audioPackLen = 320; // g711a
     }
     else if (m_audioFile)

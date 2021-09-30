@@ -92,6 +92,8 @@ typedef enum BVRTPCmdType {
 
     TPCmdType_Put_PU_Info = 30, // 上传PU信息
     TPCmdType_Put_CMS_PU_Info_List = 31, // 上传CMS上PU信息列表
+
+    TPCmdType_Set_AuthCodeAndKey = 40, // 认证码+聚合秘钥, 设备授权+模块授权
 }BVRTPCmdType;
 
 // cms信息
@@ -171,6 +173,14 @@ typedef struct BVAuthFileProperty {
     int expire; // 有效时间，精确到秒
 } BVAuthFileProperty;
 
+typedef struct BVAuthAuthCodeAndKey {
+    long long auth_code; // 认证码
+    char key[SERIAL_NUMBER_SIZE]; // 聚合秘钥/产品秘钥/模块秘钥. 目前仅支持聚合秘钥
+
+    int resp_code; // 回复错误码
+    char* resp_msg; // 回复错误消息
+}BVAuthAuthCodeAndKey;
+
 // 命令回复
 typedef struct BVRCommondRes {
     enum BVRTPCmdType iMethod;
@@ -180,6 +190,7 @@ typedef struct BVRCommondRes {
     union {
         BVRTPCmdCMSInfo* cmsInfo; // 获取CMS信息
         BVRTPCmdCMSWHList* whList; // 获取黑白名单
+        BVAuthAuthCodeAndKey* authCodeAndKey; // 自动授权
         // ... 
     } data;
 }BVRCommondRes;
@@ -196,6 +207,7 @@ typedef struct BVRCommond {
         BVRTPCmdCMSWHList* whList; // 获取黑白名单
         BVRTPCmdPUInfo* puInfo; // 上传PU信息
         BVRTPCmdCMS_PUInfo* cmsPuInfoList; // 上传CMS的PU信息列表
+        BVAuthAuthCodeAndKey* authCodeAndKey; // 自动授权
         // ... 
     } data;
 
