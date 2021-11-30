@@ -135,12 +135,12 @@ typedef enum _BVCU_STORAGE_RECORDTYPE{
 
 typedef enum _BVCU_STORAGE_FILE_TYPE{
     BVCU_STORAGE_FILE_TYPE_ALL = 0,      // 不限定文件类型
-    BVCU_STORAGE_FILE_TYPE_RECORD = 1 << 0,   // 录像文件
-    BVCU_STORAGE_FILE_TYPE_CAPTURE = 1 << 1,  // 图片文件
-    BVCU_STORAGE_FILE_TYPE_GPS = 1 << 2,      // GPS文件
-    BVCU_STORAGE_FILE_TYPE_AUDIO = 1 << 3,    // 音频文件
-    BVCU_STORAGE_FILE_TYPE_LOG = 1 << 4,      // 日志文件
-    BVCU_STORAGE_FILE_TYPE_FIRMWARE = 1 << 8, // 固件文件
+    BVCU_STORAGE_FILE_TYPE_RECORD = 1 << 0,   // 录像文件 video
+    BVCU_STORAGE_FILE_TYPE_CAPTURE = 1 << 1,  // 图片文件 image
+    BVCU_STORAGE_FILE_TYPE_GPS = 1 << 2,      // GPS文件  gps
+    BVCU_STORAGE_FILE_TYPE_AUDIO = 1 << 3,    // 音频文件 audio
+    BVCU_STORAGE_FILE_TYPE_LOG = 1 << 4,      // 日志文件 log
+    BVCU_STORAGE_FILE_TYPE_FIRMWARE = 1 << 8, // 固件文件 firmware
 }BVCU_STORAGE_FILE_TYPE;
 
 // 媒体方向

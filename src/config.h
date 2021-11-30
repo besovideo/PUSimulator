@@ -22,6 +22,7 @@ struct PUConfig
     char serverIP[64]; // 上线服务器地址
     int  serverPort;   // 上线服务器端口
     int  protoType;    // 协议类型：0 : UDP, 其它值：TCP。
+    int  relogin;      // 是否断线重连：0：否，其他值：间隔时间，秒。
     // gps
     int  interval;     // 上报间隔：秒
     char gpsName[64];  // GPS 通道名称

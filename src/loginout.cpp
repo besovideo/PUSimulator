@@ -13,12 +13,13 @@ class CPUSession : public CPUSessionBase
 protected:
     CGPSChannel* m_pGPS;     // GPS通道对象。
     CTSPChannel* m_pTSP;     // 串口通道对象。
-    CMediaChannel* m_pMedia;     // 媒体通道对象。
+    CMediaChannel* m_pMedia; // 媒体通道对象。
+    time_t m_lastReloginTime;// 最后一次尝试登录时间
 public:
     CPUSession(const char* ID);
     ~CPUSession();
     void RegisterChannel();
-    void HandleEvent();
+    void HandleEvent(time_t nowTime);
 
 private:
     virtual BVCU_Result OnSetInfo(const char* name, int lat, int lng);
@@ -28,11 +29,15 @@ private:
 
 CPUSession::CPUSession (const char* ID)
     : CPUSessionBase(ID)
+    , m_lastReloginTime(0)
 {
 }
 CPUSession::~CPUSession()
 {
 }
+
+static CPUSession* pSession[1024] = { 0,0,0,0 };  // 全局Session
+static int relogintime = 0; // 是否断线重连，0：否，其他值：间隔时间，秒
 
 void CPUSession::RegisterChannel() {
     // 注册通道
@@ -43,8 +48,15 @@ void CPUSession::RegisterChannel() {
     m_pMedia = new CMediaChannel();
     AddAVChannel(m_pMedia);
 }
-void CPUSession::HandleEvent()
+void CPUSession::HandleEvent(time_t nowTime)
 {
+    if (!BOnline()) {
+        if (relogintime > 0 && !BLogining() && (m_lastReloginTime == 0 || nowTime - m_lastReloginTime > relogintime)) {
+            m_lastReloginTime = nowTime;
+            Login(BVCU_PU_ONLINE_THROUGH_ETHERNET, 200 * 10000000, 200 * 10000000);
+        }
+        return;
+    }
     if (m_pGPS)
         m_pGPS->UpdateData();
     if (m_pTSP)
@@ -82,8 +94,6 @@ void CPUSession::OnOfflineEvent(BVCU_Result iResult)
     printf("======================== server offline: %d ==========================\n", iResult);
 }
 
-static CPUSession* pSession[1024] = { 0,0,0,0 };  // 全局Session
-
 // 登录服务器。从配置文件中读取设备信息，和服务器信息；请提前设置好。
 int Login(bool autoOption)
 {
@@ -99,6 +109,7 @@ int Login(bool autoOption)
         char puid[32];
         char puName[32];
         sscanf(puconfig.ID, "PU_%X", &startID);
+        relogintime = puconfig.relogin;
         for (int i = 0; i < puconfig.PUCount && i < sizeof(pSession) / sizeof(pSession[0]); i++)
         {
             sprintf_s(puid, "PU_%X", startID++);
@@ -172,9 +183,10 @@ int SendAlarm()
 
 void HandleEvent()
 {
+    time_t nowTime = time(NULL);
     for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
     {
         if (pSession[i] != 0)
-            pSession[i]->HandleEvent();
+            pSession[i]->HandleEvent(nowTime);
     }
 }

@@ -1,6 +1,8 @@
 ﻿#ifndef __LIB_AAA_CONST_H__
 #define __LIB_AAA_CONST_H__
 
+#include "bvrconfig.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

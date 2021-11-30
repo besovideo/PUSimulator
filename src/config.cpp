@@ -31,6 +31,7 @@ void LoadConfig(PUConfig* pConfig)
     if (0 >= pConfig->serverPort || pConfig->serverPort >= 65535)
         pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = GetPrivateProfileIntA("server", "type", DEFAULT_PROTOTYPE, CONFIG_FILE_PATH_NAME);
+    pConfig->relogin= GetPrivateProfileIntA("server", "relogin", 0, CONFIG_FILE_PATH_NAME);
     // gps
     pConfig->interval = GetPrivateProfileIntA("gps", "interval", DEFAULT_GPS_INTERVAL, CONFIG_FILE_PATH_NAME);
     if (0 >= pConfig->interval || pConfig->interval >= 60*60)
@@ -59,6 +60,8 @@ int SetConfig(const PUConfig* pConfig)
     WritePrivateProfileStringA("server", "port", tempbuf, CONFIG_FILE_PATH_NAME);
     sprintf(tempbuf, "%d", pConfig->protoType);
     WritePrivateProfileStringA("server", "type", tempbuf, CONFIG_FILE_PATH_NAME);
+    sprintf(tempbuf, "%d", pConfig->relogin);
+    WritePrivateProfileStringA("server", "relogin", tempbuf, CONFIG_FILE_PATH_NAME);
     sprintf(tempbuf, "%d", pConfig->interval);
     WritePrivateProfileStringA("gps", "interval", tempbuf, CONFIG_FILE_PATH_NAME);
     WritePrivateProfileStringA("gps", "name", pConfig->gpsName, CONFIG_FILE_PATH_NAME);
@@ -78,6 +81,7 @@ void LoadConfig(PUConfig* pConfig)
     strncpy_s(pConfig->audioFile, "8k_1_16.g711a");
     pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = DEFAULT_PROTOTYPE;
+    pConfig->bRelogin = 0;
     pConfig->lat = 200 * 10000000;
     pConfig->lng = 200 * 10000000;
     pConfig->interval = DEFAULT_GPS_INTERVAL;

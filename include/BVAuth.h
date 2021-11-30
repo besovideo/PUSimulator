@@ -45,6 +45,11 @@ LIBBVCSP_API BVCU_Result BVCSP_GetEncryptedData(char* data, int* len);
 LIBBVCSP_API BVCU_Result BVCSP_Trial(int authCode);
 
 /**
+    是否重连, 1重连; 2不重连; 其它
+*/
+LIBBVCSP_API BVCU_Result BVCSP_SetReConnect(int isReConnect);
+
+/**
     加密BVCSP_GetEncryptedData()获得的数据,
     (用于测试, 不推荐使用)
 */

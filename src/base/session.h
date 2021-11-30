@@ -31,6 +31,7 @@ public:
     // 上线服务器,through上线网络类型BVCU_PU_ONLINE_THROUGH_， lat,lng 当前设备WGS84坐标位置
     int  Login(int through, int lat, int lng);
     int  Logout();    // 下线
+    bool BLogining() { return (!m_bOnline && m_session != 0); }  // 是否正在上线。
     bool BOnline() { return m_bOnline; }  // 是否已经上线。
 
     // 给服务器发请求. 报警类型，子设备号，报警值，是否是结束报警，报警描述。

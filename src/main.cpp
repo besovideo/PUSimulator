@@ -45,7 +45,7 @@ int main()
     while(1)
     {
         int iType;
-        printf("0:exit  1:login  2:logout  3:alarm  4:setServer \r\n");
+        printf("0:exit  1:login  2:logout  3:alarm \r\n");
         scanf("%d", &iType);
         if (iType == 0)
             break;
