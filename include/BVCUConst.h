@@ -425,7 +425,7 @@ typedef enum _BVCU_SUBMETHOD_TYPE{
 
     //CONF（集群）部分---------------------------
     //以下由具有BVCU_CONF_PARTICIPATOR_POWER_ADMIN权限者调用
-    BVCU_SUBMETHOD_CONF_CREATE = 0x22600,//创建集群。 输入类型：BVCU_Conf_BaseInfo，
+    BVCU_SUBMETHOD_CONF_CREATE = 0x22600,// 创建集群。 输入类型：BVCU_Conf_BaseInfo，
                                          // 输出类型：BVCU_Conf_BaseInfo + BVCU_Conf_Participator_Info 同名notify
 
     //以下所有BVCU_SUBMETHOD_CONF_*命令除非特别说明，否则BVCU_Command.szTargetID设置为CONF_ID
