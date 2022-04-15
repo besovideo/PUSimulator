@@ -20,10 +20,11 @@ void Log_Callback(int level, const char* log)
     printf("[BVCSP LOG] %s\n", log);
 }
 
+static bool bRun = true;
 // 用来定时 读取音视频、GPS、串口数据，并发送。
 unsigned __stdcall Wall_App(void*)
 {
-    while (true)
+    while (bRun)
     {
         HandleEvent();
         BVCSP_HandleEvent();
@@ -63,6 +64,7 @@ int main()
         }
     }
     Logout();
+    bRun = false;
     BVCSP_Finish();
     return 0;
 }

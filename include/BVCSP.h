@@ -235,7 +235,7 @@ typedef struct _BVCSP_Packet{
     // 数据包数据  
     void* pData;
 
-    // 时间戳  timestamp, unit: us  
+    // 时间戳  timestamp, unit: us, 相对1970-01-01 00:00:00的微妙。
     long long iPTS;
 
 }BVCSP_Packet;

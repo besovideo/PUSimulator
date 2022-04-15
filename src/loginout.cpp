@@ -80,6 +80,7 @@ BVCU_Result CPUSession::OnSetInfo(const char* name, int lat, int lng)
 // 在线状态变化通知，登录/退出 服务器
 void CPUSession::OnLoginEvent(BVCU_Result iResult)
 {
+    m_lastReloginTime = time(NULL);
     if (BOnline())
     {
         printf("============================ pu online ==============================\n");
