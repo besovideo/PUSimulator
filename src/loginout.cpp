@@ -38,6 +38,7 @@ CPUSession::~CPUSession()
 
 static CPUSession* pSession[1024] = { 0,0,0,0 };  // 全局Session
 static int relogintime = 0; // 是否断线重连，0：否，其他值：间隔时间，秒
+static bool needOnline = false; // 是否需要在线，调用login和logout时修改
 
 void CPUSession::RegisterChannel() {
     // 注册通道
@@ -51,7 +52,7 @@ void CPUSession::RegisterChannel() {
 void CPUSession::HandleEvent(time_t nowTime)
 {
     if (!BOnline()) {
-        if (relogintime > 0 && !BLogining() && (m_lastReloginTime == 0 || nowTime - m_lastReloginTime > relogintime)) {
+        if (needOnline && relogintime > 0 && !BLogining() && (m_lastReloginTime == 0 || nowTime - m_lastReloginTime > relogintime)) {
             m_lastReloginTime = nowTime;
             Login(BVCU_PU_ONLINE_THROUGH_ETHERNET, 200 * 10000000, 200 * 10000000);
         }
@@ -98,6 +99,7 @@ void CPUSession::OnOfflineEvent(BVCU_Result iResult)
 // 登录服务器。从配置文件中读取设备信息，和服务器信息；请提前设置好。
 int Login(bool autoOption)
 {
+    needOnline = true;
     if (autoOption && pSession[0] != 0)
     {  // 自动操作不能重复登录。
         return 0;
@@ -145,6 +147,7 @@ int Login(bool autoOption)
 // 退出登录
 int Logout()
 {
+    needOnline = false;
     bool bFind = false;
     for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
     {

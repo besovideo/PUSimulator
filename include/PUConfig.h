@@ -347,7 +347,8 @@ typedef struct  _BVCU_PUCFG_AudioIn{
     int iBitsPerSample;// 采样精度
     int iVolume;// 音量
 
-    BVCU_PUCFG_AudioVqe stVqe; // 音频处理
+    BVCU_PUCFG_AudioVqe stVqe;  // 音频处理
+    int iEnableHalfDuplex;      // 是否开启半双工，默认关闭，0：关闭，1：开启
 }BVCU_PUCFG_AudioIn;
 
 // 音频输出
