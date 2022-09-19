@@ -111,7 +111,7 @@ int Utf8ToAnsi(char* _dir, int _len, const char* _src)
 
     MultiByteToWideChar(CP_UTF8, 0, _src, -1, wchar, len);
     WideCharToMultiByte(CP_ACP, 0, wchar, -1, _dir, _len, NULL, NULL);
-    delete wchar;
+    delete []wchar;
 #else
     size_t inlen = 0, outlen = _len;
     do {
@@ -150,7 +150,7 @@ int AnsiToUtf8(char* _dir, int _len, const char* _src)
 
     MultiByteToWideChar(CP_ACP, 0, _src, -1, wchar, len);
     WideCharToMultiByte(CP_UTF8, 0, wchar, -1, _dir, _len, NULL, NULL);
-    delete wchar;
+    delete []wchar;
 #else
     size_t inlen = 0, outlen = _len;
     do {

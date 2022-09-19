@@ -214,7 +214,7 @@ extern "C" {
     * 设置加密密钥
 	* @param key 加密密钥
 	* @param len 加密密钥长度
-    * 示例: setCryptKey((unsigned char*)"0123456789ABCDEF0123456789ABCDEF", 32);
+    * 示例: setCryptKey((unsigned char*)"12345678901234567890123456789012", 32);
     */
     LIBSAV_API void SAV_Set_CryptKey(unsigned char* cryptKey, int len);
 #ifdef  __cplusplus

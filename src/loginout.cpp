@@ -25,11 +25,15 @@ private:
     virtual BVCU_Result OnSetInfo(const char* name, int lat, int lng);
     virtual void OnLoginEvent(BVCU_Result iResult);
     virtual void OnOfflineEvent(BVCU_Result iResult);
+    virtual void OnCommandReply(BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam);
 };
 
-CPUSession::CPUSession (const char* ID)
+CPUSession::CPUSession(const char* ID)
     : CPUSessionBase(ID)
     , m_lastReloginTime(0)
+    , m_pGPS(NULL)
+    , m_pMedia(NULL)
+    , m_pTSP(NULL)
 {
 }
 CPUSession::~CPUSession()
@@ -85,6 +89,8 @@ void CPUSession::OnLoginEvent(BVCU_Result iResult)
     if (BOnline())
     {
         printf("============================ pu online ==============================\n");
+        // 登录成功后，获取token和http api地址
+        SendCommand(BVCU_METHOD_QUERY, BVCU_SUBMETHOD_CMS_HTTPAPI, NULL, NULL, NULL);
     }
     else
     {
@@ -94,6 +100,19 @@ void CPUSession::OnLoginEvent(BVCU_Result iResult)
 void CPUSession::OnOfflineEvent(BVCU_Result iResult)
 {
     printf("======================== server offline: %d ==========================\n", iResult);
+}
+void CPUSession::OnCommandReply(BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam)
+{
+    printf("======================== on command reply: %d ==========================\n", pParam->iResult);
+    if (BVCU_Result_SUCCEEDED(pParam->iResult)) {
+        if (pCommand->iSubMethod == BVCU_SUBMETHOD_CMS_HTTPAPI && pParam->stContent.pData != NULL) {
+            BVCU_CMSCFG_HttpApi* pHttpApi = (BVCU_CMSCFG_HttpApi*)pParam->stContent.pData;
+            printf("=========================== http api ===========================\n");
+            printf("====http:  %s\n", pHttpApi->szHttpUrl);
+            printf("====https: %s\n", pHttpApi->szHttpsUrl);
+            printf("====token: %s\n", pHttpApi->szToken);
+        }
+    }
 }
 
 // 登录服务器。从配置文件中读取设备信息，和服务器信息；请提前设置好。
@@ -111,7 +130,8 @@ int Login(bool autoOption)
         int startID = 1;
         char puid[32];
         char puName[32];
-        sscanf(puconfig.ID, "PU_%X", &startID);
+        if (sscanf_s(puconfig.ID, "PU_%X", &startID) != 1)
+            startID = 0x55AA0000;
         relogintime = puconfig.relogin;
         for (int i = 0; i < puconfig.PUCount && i < sizeof(pSession) / sizeof(pSession[0]); i++)
         {
@@ -185,6 +205,22 @@ int SendAlarm()
     return -1;
 }
 
+// 发送命令
+int SendCommand()
+{
+    bool bFind = false;
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    {
+        if (pSession[i] != 0)
+        {
+            pSession[i]->SendCommand(BVCU_METHOD_QUERY, BVCU_SUBMETHOD_CMS_HTTPAPI, NULL, NULL, NULL);
+            bFind = true;
+        }
+    }
+    if (bFind)
+        return 0;
+    return -1;
+}
 void HandleEvent()
 {
     time_t nowTime = time(NULL);

@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include <process.h>
 
 #include "BVCSP.h"
@@ -7,64 +7,77 @@
 
 #ifdef _MSC_VER
 #include <windows.h>
-    #ifdef _WIN64
-        #pragma comment(lib, "BVCSP_x64.lib")
-    #elif _WIN32
-        #pragma comment(lib, "BVCSP.lib")
-    #endif // _WIN32
+#ifdef _WIN64
+#pragma comment(lib, "BVCSP_x64.lib")
+#elif _WIN32
+#pragma comment(lib, "BVCSP.lib")
+#endif // _WIN32
 #endif // _MSC_VER
 
-// BVCSPÈÕÖ¾»Øµ÷
+// BVCSPæ—¥å¿—å›è°ƒ
 void Log_Callback(int level, const char* log)
 {
     printf("[BVCSP LOG] %s\n", log);
 }
 
 static bool bRun = true;
-// ÓÃÀ´¶¨Ê± ¶ÁÈ¡ÒôÊÓÆµ¡¢GPS¡¢´®¿ÚÊı¾İ£¬²¢·¢ËÍ¡£
+static int cmdType = 0;
+// ç”¨æ¥å®šæ—¶ è¯»å–éŸ³è§†é¢‘ã€GPSã€ä¸²å£æ•°æ®ï¼Œå¹¶å‘é€ã€‚
 unsigned __stdcall Wall_App(void*)
 {
+    // åˆå§‹åŒ–åº“
+    BVCSP_SetLogCallback(Log_Callback, BVCU_LOG_LEVEL_INFO);
+    BVCSP_Initialize(0, 0);
+    BVCSP_HandleEvent(); // é€šçŸ¥åº“å†…éƒ¨ä½¿ç”¨å½“å‰çº¿ç¨‹ä½œä¸ºäº‹åŠ¡çº¿ç¨‹ã€‚
+
+    // å¼€å§‹è®¤è¯
+    Auth();
+
     while (bRun)
     {
         HandleEvent();
         BVCSP_HandleEvent();
+
+        if (cmdType == 1)
+        {
+            Login(false);
+        }
+        else if (cmdType == 2)
+        {
+            Logout();
+        }
+        else if (cmdType == 3)
+        {
+            SendAlarm();
+        }
+        else if (cmdType == 4)
+        {
+            SendCommand();
+        }
+        cmdType = 0;
     }
+
+    Logout();
+    BVCSP_Finish();
     return 0;
 }
 
 int main()
 {
-    // ³õÊ¼»¯¿â
-    BVCSP_SetLogCallback(Log_Callback, BVCU_LOG_LEVEL_INFO);
-    BVCSP_Initialize(0,0);
-
     _beginthreadex(NULL, 0, Wall_App, NULL, 0, NULL);
 
-    // ¿ªÊ¼ÈÏÖ¤
-    Auth();
 
-    while(1)
+    while (1)
     {
         int iType;
-        printf("0:exit  1:login  2:logout  3:alarm \r\n");
-        scanf("%d", &iType);
+        printf("0:exit  1:login  2:logout  3:alarm 4:command\r\n");
+        if (scanf_s("%d", &iType) != 1)
+            break;
         if (iType == 0)
             break;
-        if (iType == 1)
-        {
-            Login(false);
-        }
-        else if (iType == 2)
-        {
-            Logout();
-        }
-        else if (iType == 3)
-        {
-            SendAlarm();
-        }
+        cmdType = iType;
     }
-    Logout();
     bRun = false;
-    BVCSP_Finish();
+    Sleep(500); // ç­‰å¾…Wall_Appçº¿ç¨‹é€€å‡ºã€‚
     return 0;
 }

@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "session.h"
@@ -15,17 +15,17 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     strncpy_s(m_deviceInfo.szProductName, "PUSimulator G1B2", _TRUNCATE);
     strncpy_s(m_deviceInfo.szSoftwareVersion, "0.0.1", _TRUNCATE);
     strncpy_s(m_deviceInfo.szHardwareVersion, "0.0.1", _TRUNCATE);
-    // Ä¬ÈÏÉèÖÃÎŞĞ§µÄ¾­Î³¶ÈµØÖ·¡£
+    // é»˜è®¤è®¾ç½®æ— æ•ˆçš„ç»çº¬åº¦åœ°å€ã€‚
     m_deviceInfo.iLatitude = 200 * 10000000;
     m_deviceInfo.iLongitude = 200 * 10000000;
-    // Í¨µÀĞÅÏ¢
+    // é€šé“ä¿¡æ¯
     memset(m_avChannels, 0x00, sizeof(m_avChannels));
     memset(m_GPSChannels, 0x00, sizeof(m_GPSChannels));
     memset(m_TSPChannels, 0x00, sizeof(m_TSPChannels));
     m_session = 0;
     m_bOnline = false;
     m_fileManager = NULL;
-    // µÇÂ¼²ÎÊı
+    // ç™»å½•å‚æ•°
     memset(&m_sesParam, 0x00, sizeof(m_sesParam));
     m_sesParam.iSize = sizeof(m_sesParam);
     m_sesParam.iTimeOut = 8000;
@@ -37,7 +37,7 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     m_sesParam.OnEvent = OnSessionEvent;
     m_sesParam.OnNotify = OnNotify;
     m_sesParam.stEntityInfo.pPUInfo = &m_deviceInfo;
-    // ×Ô¶¯»ñÈ¡¿ª»úÊ±¼ä
+    // è‡ªåŠ¨è·å–å¼€æœºæ—¶é—´
 #ifdef _MSC_VER
     m_sesParam.stEntityInfo.iBootDuration = GetTickCount64() / 1000;
 #endif
@@ -124,7 +124,7 @@ int CPUSessionBase::AddAVChannel(CAVChannelBase* pChannel)
 }
 int CPUSessionBase::AddGPSChannel(CGPSChannelBase* pChannel)
 {
-    for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++ i)
+    for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++i)
     {
         if (m_GPSChannels[i] == 0)
         {
@@ -153,7 +153,7 @@ void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout,
 {
     strncpy_s(m_sesParam.szServerAddr, IP, _TRUNCATE);
     m_sesParam.iServerPort = port;
-    m_sesParam.iCmdProtoType = proto == 0? BVCU_PROTOTYPE_UDP: BVCU_PROTOTYPE_TCP;
+    m_sesParam.iCmdProtoType = proto == 0 ? BVCU_PROTOTYPE_UDP : BVCU_PROTOTYPE_TCP;
     m_sesParam.iTimeOut = timeout;
     m_sesParam.iKeepaliveInterval = iKeepaliveInterval;
 }
@@ -161,10 +161,10 @@ int CPUSessionBase::Login(int through, int lat, int lng)
 {
     Logout();
     m_sesParam.pUserData = this;
-    // Í¨µÀĞÅÏ¢
+    // é€šé“ä¿¡æ¯
     BVCU_PUCFG_ChannelInfo* pChannelList = NULL;
     int iChannelCount = 0;
-    for (int i = 0; i < MAX_AV_CHANNEL_COUNT; ++ i)
+    for (int i = 0; i < MAX_AV_CHANNEL_COUNT; ++i)
     {
         if (m_avChannels[i] != NULL)
             ++iChannelCount;
@@ -240,14 +240,14 @@ int CPUSessionBase::Login(int through, int lat, int lng)
     printf("Call BVCSP_login(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
         , m_deviceInfo.szID, bvResult, m_session);
     if (pChannelList)
-        delete pChannelList;
+        delete[]pChannelList;
     return bvResult;
 }
 int CPUSessionBase::Logout()
 {
     if (m_session)
     {
-        BVCU_Result bvResult = BVCSP_Logout(m_session); 
+        BVCU_Result bvResult = BVCSP_Logout(m_session);
         printf("Call BVCSP_Logout(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
             , m_deviceInfo.szID, bvResult, m_session);
         m_bOnline = false;
@@ -270,7 +270,7 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
         if (desc)
             strncpy_s(eventAlarm.szEventDesc, sizeof(eventAlarm.szEventDesc), desc, _TRUNCATE);
         if (m_GPSChannels[0])
-        {  // Èç¹ûÓĞGPSÄ£¿é£¬»ñÈ¡µ±Ç°¶¨Î»¡£
+        {  // å¦‚æœæœ‰GPSæ¨¡å—ï¼Œè·å–å½“å‰å®šä½ã€‚
             const BVCU_PUCFG_GPSData* gps = m_GPSChannels[0]->OnGetGPSData();
             if (gps)
             {
@@ -280,8 +280,8 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
         }
         strncpy_s(eventAlarm.szDevID, sizeof(eventAlarm.szDevID), m_deviceInfo.szID, _TRUNCATE);
         {
-            time_t now = time(NULL);  // Ê±¼äÓ¦¸ÃÒ²ÊÇ´ÓGPSÉè±¸ÖĞ¶ÁÈ¡
-            tm* ptm = (tm*)gmtime(&now);  // ³õÌØÊâËµÃ÷£¬Íø´«µÄÊ±¼ä¶¼ÊÇUTCÊ±¼ä¡£
+            time_t now = time(NULL);  // æ—¶é—´åº”è¯¥ä¹Ÿæ˜¯ä»GPSè®¾å¤‡ä¸­è¯»å–
+            tm* ptm = (tm*)gmtime(&now);  // åˆç‰¹æ®Šè¯´æ˜ï¼Œç½‘ä¼ çš„æ—¶é—´éƒ½æ˜¯UTCæ—¶é—´ã€‚
             eventAlarm.stTime.iYear = ptm->tm_year + 1900;
             eventAlarm.stTime.iMonth = ptm->tm_mon + 1;
             eventAlarm.stTime.iDay = ptm->tm_mday;
@@ -299,6 +299,30 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
         notify.stMsgContent.stMsgContent.pData = &eventAlarm;
         BVCU_Result bvResult = BVCSP_SendNotify(m_session, &notify);
         printf("Call BVCSP_SendNotify code:%d session:%p\n", bvResult, m_session);
+        return bvResult;
+    }
+    return BVCU_RESULT_E_BADREQUEST;
+}
+
+int CPUSessionBase::SendCommand(int iMethod, int iSubMethod, char* pTargetID, void* pData, void* pUserData)
+{
+    if (m_session) {
+        BVCSP_Command cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.iSize = sizeof(cmd);
+        cmd.OnEvent = CPUSessionBase::OnCommandBack;
+        cmd.iMethod = iMethod;
+        cmd.iSubMethod = iSubMethod;
+        cmd.pUserData = pUserData;
+        if (pTargetID) {
+            strncpy_s(cmd.szTargetID, sizeof(cmd.szTargetID), pTargetID, _TRUNCATE);
+        }
+        if (pData) {
+            cmd.stMsgContent.iDataCount = 1;
+            cmd.stMsgContent.pData = pData;
+        }
+        BVCU_Result bvResult = BVCSP_SendCmd(m_session, &cmd);
+        printf("Call BVCSP_SendCmd code:%d session:%p\n", bvResult, m_session);
         return bvResult;
     }
     return BVCU_RESULT_E_BADREQUEST;
@@ -342,7 +366,7 @@ void CPUSessionBase::OnSessionEvent(BVCSP_HSession hSession, int iEventCode, voi
         if (iEventCode == BVCSP_EVENT_SESSION_OPEN)
         {
             if (BVCU_Result_SUCCEEDED(iResult))
-            { // µÇÂ¼³É¹¦
+            { // ç™»å½•æˆåŠŸ
                 printf("Login succeeded\n");
                 pSession->m_bOnline = true;
             }
@@ -391,7 +415,7 @@ void CPUSessionBase::OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_
             pChannel->OnClose();
         }
         else if (iEventCode == BVCSP_EVENT_DIALOG_PLIKEY)
-        {   // ÇëÇó¹Ø¼üÖ¡
+        {   // è¯·æ±‚å…³é”®å¸§
             pChannel->OnPLI();
         }
     }
@@ -434,7 +458,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
     if (pCommand->iMethod == BVCU_METHOD_QUERY)
     {
         if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPSDATA)
-        {   // »ñÈ¡PUµÄGPSÍ¨µÀÊı¾İ¡£ÊäÈëÀàĞÍ£ºÎŞ£»Êä³öÀàĞÍ: BVCU_PUCFG_GPSData
+        {   // è·å–PUçš„GPSé€šé“æ•°æ®ã€‚è¾“å…¥ç±»å‹ï¼šæ— ï¼›è¾“å‡ºç±»å‹: BVCU_PUCFG_GPSData
             int index = pCommand->iTargetIndex;
             if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
             {
@@ -449,7 +473,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
-        {   // ´®¿ÚÊôĞÔ¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_SerialPort;Êä³öÀàĞÍ£ºÎŞ
+        {   // ä¸²å£å±æ€§ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_SerialPort;è¾“å‡ºç±»å‹ï¼šæ— 
             int index = pCommand->iTargetIndex;
             if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
             {
@@ -464,7 +488,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPS)
-        {   // GPSÊôĞÔ¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_GPSParam;Êä³öÀàĞÍ£ºÎŞ
+        {   // GPSå±æ€§ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_GPSParam;è¾“å‡ºç±»å‹ï¼šæ— 
             int index = pCommand->iTargetIndex;
             if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
             {
@@ -482,21 +506,21 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
     else if (pCommand->iMethod == BVCU_METHOD_CONTROL)
     {
         if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_DEVICEINFO)
-        {   // Éè±¸ĞÅÏ¢¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_DeviceInfo;Êä³öÀàĞÍ£ºÎŞ
-                const BVCU_PUCFG_DeviceInfo* pParam = (BVCU_PUCFG_DeviceInfo*)pCommand->stMsgContent.pData;
-                if (pParam)
-                {
-                    szResult.iResult = pSession->OnSetInfo(pParam->szName, pParam->iLatitude, pParam->iLongitude);
-                    pCommand->OnEvent(hSession, pCommand, &szResult);
-                    return BVCU_RESULT_S_OK;
-                }
+        {   // è®¾å¤‡ä¿¡æ¯ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_DeviceInfo;è¾“å‡ºç±»å‹ï¼šæ— 
+            const BVCU_PUCFG_DeviceInfo* pParam = (BVCU_PUCFG_DeviceInfo*)pCommand->stMsgContent.pData;
+            if (pParam)
+            {
+                szResult.iResult = pSession->OnSetInfo(pParam->szName, pParam->iLatitude, pParam->iLongitude);
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
+            }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_CHANNELINFO)
-        {   // Ä³¸öPUµÄÍ¨µÀĞÅÏ¢¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_PUChannelInfo£»Êä³öÀàĞÍ: ÎŞ£»´¥·¢ÀàĞÍ£ºÍ¬ÃûNotify
+        {   // æŸä¸ªPUçš„é€šé“ä¿¡æ¯ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_PUChannelInfoï¼›è¾“å‡ºç±»å‹: æ— ï¼›è§¦å‘ç±»å‹ï¼šåŒåNotify
             const BVCU_PUCFG_PUChannelInfo* pParam = (BVCU_PUCFG_PUChannelInfo*)pCommand->stMsgContent.pData;
             if (pParam)
             {
-                for (int i = 0; i < pParam->iChannelCount; ++ i)
+                for (int i = 0; i < pParam->iChannelCount; ++i)
                 {
                     CChannelBase* pChannel = pSession->GetChannelBase(pParam->pChannel[i].iChannelIndex);
                     szResult.iResult = pChannel->OnSetName(pParam->pChannel[i].szName);
@@ -506,7 +530,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
-        {   // ´®¿ÚÊôĞÔ¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_SerialPort;Êä³öÀàĞÍ£ºÎŞ
+        {   // ä¸²å£å±æ€§ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_SerialPort;è¾“å‡ºç±»å‹ï¼šæ— 
             int index = pCommand->iTargetIndex;
             if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
             {
@@ -520,7 +544,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPS)
-        {   // GPSÊôĞÔ¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_GPSParam;Êä³öÀàĞÍ£ºÎŞ
+        {   // GPSå±æ€§ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_GPSParam;è¾“å‡ºç±»å‹ï¼šæ— 
             int index = pCommand->iTargetIndex;
             if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
             {
@@ -534,7 +558,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_PTZCONTROL)
-        {   // ²Ù×÷ÔÆÌ¨¡£ÊäÈëÀàĞÍ£ºBVCU_PUCFG_PTZControl£»Êä³öÀàĞÍ£ºÎŞ
+        {   // æ“ä½œäº‘å°ã€‚è¾“å…¥ç±»å‹ï¼šBVCU_PUCFG_PTZControlï¼›è¾“å‡ºç±»å‹ï¼šæ— 
             int index = pCommand->iTargetIndex;
             if (index < MAX_AV_CHANNEL_COUNT && pSession->m_avChannels[index] != 0)
             {
@@ -550,12 +574,12 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_START ||
             pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_PARTICIPATOR_ADD ||
             pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_PARTICIPATOR_INVITE_SPEAK)
-        {   // ÓïÒô»áÒéÏà¹Ø¿ØÖÆÃüÁîÈ«²¿×Ô¶¯»ØOK
+        {   // è¯­éŸ³ä¼šè®®ç›¸å…³æ§åˆ¶å‘½ä»¤å…¨éƒ¨è‡ªåŠ¨å›OK
             pCommand->OnEvent(hSession, pCommand, &szResult);
             return BVCU_RESULT_S_OK;
         }
     }
-    return BVCU_RESULT_E_FAILED;// ²»½ÓÊÜÕâ¸öÃüÁî´¦Àí
+    return BVCU_RESULT_E_FAILED;// ä¸æ¥å—è¿™ä¸ªå‘½ä»¤å¤„ç†
 }
 BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, BVCSP_DialogParam* pParam)
 {
@@ -599,5 +623,18 @@ BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, B
                 return BVCU_RESULT_S_OK;
         }
     }
-    return BVCU_RESULT_E_FAILED;// ²»½ÓÊÜÕâ¸öÃüÁî´¦Àí
+    return BVCU_RESULT_E_FAILED;// ä¸æ¥å—è¿™ä¸ªå‘½ä»¤å¤„ç†
+}
+void CPUSessionBase::OnCommandBack(BVCSP_HSession hSession, BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam)
+{
+    CPUSessionBase* pSession = 0;
+    BVCSP_SessionInfo sesInfo;
+    if (BVCU_Result_SUCCEEDED(BVCSP_GetSessionInfo(hSession, &sesInfo)))
+    {
+        pSession = (CPUSessionBase*)sesInfo.stParam.pUserData;
+    }
+    if (pSession == 0 || hSession != pSession->m_session)
+        return;
+    pSession->OnCommandReply(pCommand, pParam);
+    return;
 }

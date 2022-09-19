@@ -1,5 +1,6 @@
 #pragma once
 #include "PUConfig.h"
+#include "CMSConfig.h"
 #include "BVEvent.h"
 #include "BVCSP.h"
 
@@ -21,6 +22,8 @@ protected:
     virtual void OnLoginEvent(BVCU_Result iResult) = 0;
     // 服务器掉线回调通知.
     virtual void OnOfflineEvent(BVCU_Result iResult) = 0;
+    // 服务器命令回复回调. 给服务器发命令后，通过该接口处理回复。
+    virtual void OnCommandReply(BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam) = 0;
 
 public:
     CPUSessionBase(const char* ID);
@@ -35,7 +38,9 @@ public:
     bool BOnline() { return m_bOnline; }  // 是否已经上线。
 
     // 给服务器发请求. 报警类型，子设备号，报警值，是否是结束报警，报警描述。
-    int  SendAlarm(int alarmType, int index, int value, int bEnd, const char* desc);    // 下线
+    int  SendAlarm(int alarmType, int index, int value, int bEnd, const char* desc);
+    // 给服务器发命令. 
+    int  SendCommand(int iMethod, int iSubMethod, char* pTargetID, void* pData, void* pUserData);
 
     // 设置设备信息
     void SetName(const char* Name);  // 设备名称
@@ -84,5 +89,6 @@ public:
     static BVCU_Result OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, BVCSP_DialogParam* pParam);
     static void OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_Event_DialogCmd* pParam);
     static BVCU_Result afterDialogRecv(BVCSP_HDialog hDialog, BVCSP_Packet* pPacket);
+    static void OnCommandBack(BVCSP_HSession hSession, BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam);
 };
 

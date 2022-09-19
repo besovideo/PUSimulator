@@ -64,21 +64,21 @@ static void mOnAuthEvent(
      totalCount: %d               \n\
      userlabel: %s               \n\
     ---------------\n",
-    result,
-    param->tagInfo.RandCode,
-    param->tagInfo.AuthCode,
-    param->SerialNumber,
-    param->certInfo.IssueUser,
-    param->termInfo.Type,
-    param->termInfo.ID,
-    (int)param->user_data,
-    param->innerInfo.errstr,
-    param->proKeyInfo.ProductKey,
-    param->proKeyInfo.State,
-    param->proKeyInfo.usedCount,
-    param->proKeyInfo.result,
-    param->proKeyInfo.totalCount,
-    param->termInfo.UserLabel);
+        result,
+        param->tagInfo.RandCode,
+        param->tagInfo.AuthCode,
+        param->SerialNumber,
+        param->certInfo.IssueUser,
+        param->termInfo.Type,
+        param->termInfo.ID,
+        (int)param->user_data,
+        param->innerInfo.errstr,
+        param->proKeyInfo.ProductKey,
+        param->proKeyInfo.State,
+        param->proKeyInfo.usedCount,
+        param->proKeyInfo.result,
+        param->proKeyInfo.totalCount,
+        param->termInfo.UserLabel);
 
     {
         std::string serialNumber;
@@ -93,10 +93,10 @@ static void mOnAuthEvent(
     if (AUTH_Result_App_Key_Error == result)
     {
         printf("[auth] app key error: \n\
-            APP_DEV_TYPE: %s\n\
-            APP_ID: %s\n\
-            APP_RSA_N:%s\n\
-            APP_RSA_E:\n",
+            APP_DEV_TYPE: %s \n\
+            APP_ID: %s \n\
+            APP_RSA_N:%s \n\
+            APP_RSA_E:%s \n",
             loc_init_param.appDevType.data(),
             loc_init_param.appId.data(),
             loc_init_param.appRSA_N.data(),
@@ -166,7 +166,7 @@ int32_t initBVAuth(const AuthInitParam initParm)
             }
         }
 
-        // 离线认证
+        // 离线认证 
         param.innerInfo.ciphertext = (char*)ciphertext.data();
         param.innerInfo.length = ciphertext.length();
     }
@@ -247,7 +247,7 @@ int32_t initBVAuth(const AuthInitParam initParm)
 const std::string PATTERN_AUTH = "[@#$%^&*()]"; // 分隔符
 
 // loadAuthFile 加载解析离线信息文件
-int32_t loadAuthFile(const std::string & filepath, std::string & serialNumber, std::string & ciphertext)
+int32_t loadAuthFile(const std::string& filepath, std::string& serialNumber, std::string& ciphertext)
 {
     if (false == bv_is_exists(filepath)) {
         return -1;
@@ -270,7 +270,7 @@ int32_t loadAuthFile(const std::string & filepath, std::string & serialNumber, s
     return 0;
 }
 
-int32_t storeAuthFile(const std::string & filepath, const std::string & serialNumber, const std::string & ciphertext)
+int32_t storeAuthFile(const std::string& filepath, const std::string& serialNumber, const std::string& ciphertext)
 {
     std::string fileData;
     fileData.append(serialNumber);
@@ -310,7 +310,7 @@ bool bv_is_exists(std::string path)
     return false;
 }
 
-int bv_file_read(std::string filename, std::string & buffer)
+int bv_file_read(std::string filename, std::string& buffer)
 {
     FILE* fp = NULL;
 #ifdef _MSC_VER

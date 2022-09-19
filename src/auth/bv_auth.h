@@ -13,7 +13,7 @@ typedef int32_t(*auth_info_init)(struct BVRAuthInfo* termInfo);
 class AuthInitParam
 {
 public:
-    AuthInitParam() { }
+    AuthInitParam() :onEvent(NULL), onInitData(NULL) { }
 
     // authFilePath: "/tmp/bv_auth.dat"
     AuthInitParam(std::string filePath,
@@ -55,7 +55,7 @@ bool isAuthSuccess();
 
 
 #ifdef _MSC_VER
-#define u_snprintf _snprintf
+#define u_snprintf _snprintf_s
 #else
 #define u_snprintf  snprintf
 #endif
