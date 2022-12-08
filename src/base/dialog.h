@@ -1,38 +1,38 @@
-#pragma once
+ï»¿#pragma once
 #include "BVCSP.h"
 
 class CChannelBase
 {
 public:
-    // ======= ĞèÒªÊµÏÖµÄ¹¦ÄÜ½Ó¿Ú
-    virtual BVCU_Result OnSetName(const char* name) = 0; // ÊÕµ½ÅäÖÃÍ¨µÀÃû³ÆÇëÇó
-    virtual BVCU_Result OnOpenRequest() = 0;   // ÊÕµ½´ò¿ªÇëÇó£¬»Ø¸´ÊÇ·ñÍ¬Òâ£¬0£ºÍ¬Òâ
-    virtual void OnOpen() = 0;   // ½¨Á¢Í¨µÀÁ¬½Ó³É¹¦Í¨Öª
-    virtual void OnClose() = 0;  // Í¨µÀÁ¬½Ó¹Ø±ÕÍ¨Öª
-    virtual void OnPLI() = 0;    // ÊÕµ½Éú³É¹Ø¼üÖ¡ÇëÇó
+    // ======= éœ€è¦å®ç°çš„åŠŸèƒ½æ¥å£
+    virtual BVCU_Result OnSetName(const char* name) = 0; // æ”¶åˆ°é…ç½®é€šé“åç§°è¯·æ±‚
+    virtual BVCU_Result OnOpenRequest() = 0;   // æ”¶åˆ°æ‰“å¼€è¯·æ±‚ï¼Œå›å¤æ˜¯å¦åŒæ„ï¼Œ0ï¼šåŒæ„
+    virtual void OnOpen() = 0;   // å»ºç«‹é€šé“è¿æ¥æˆåŠŸé€šçŸ¥
+    virtual void OnClose() = 0;  // é€šé“è¿æ¥å…³é—­é€šçŸ¥
+    virtual void OnPLI() = 0;    // æ”¶åˆ°ç”Ÿæˆå…³é”®å¸§è¯·æ±‚
 
 protected:
-    int m_index; // Ó²¼şË÷Òı£¬´Ó0¿ªÊ¼±àºÅ£¬¿ÉÒÔÓÉsession×¢²áÊ±·ÖÅä£¨ÕâÊ±Ã¿¸öÍ¨µÀ×¢²áË³Ğò²»ÄÜ±ä»¯£©¡£
-    int m_channelIndexBase;  // Í¨µÀºÅÆğÊ¼Öµ¡£
-    int m_supportMediaDir;   // Ö§³ÖµÄÃ½Ìå·½Ïò¡£
-    char m_name[64];         // Í¨µÀÃû³Æ¡£
+    int m_index; // ç¡¬ä»¶ç´¢å¼•ï¼Œä»0å¼€å§‹ç¼–å·ï¼Œå¯ä»¥ç”±sessionæ³¨å†Œæ—¶åˆ†é…ï¼ˆè¿™æ—¶æ¯ä¸ªé€šé“æ³¨å†Œé¡ºåºä¸èƒ½å˜åŒ–ï¼‰ã€‚
+    int m_channelIndexBase;  // é€šé“å·èµ·å§‹å€¼ã€‚
+    int m_supportMediaDir;   // æ”¯æŒçš„åª’ä½“æ–¹å‘ã€‚
+    char m_name[64];         // é€šé“åç§°ã€‚
 
-    BVCSP_HDialog m_hDialog; // BVCSP´«Êä¾ä±ú¡£
-    int m_openMediaDir;      // µ±Ç°´ò¿ªÃ½Ìå·½Ïò¡£
-    bool m_bOpening;         // ÊÇ·ñÕıÔÚ´ò¿ªÖĞ£¬µÈ´ı»Ø¸´¡£
+    BVCSP_HDialog m_hDialog; // BVCSPä¼ è¾“å¥æŸ„ã€‚
+    int m_openMediaDir;      // å½“å‰æ‰“å¼€åª’ä½“æ–¹å‘ã€‚
+    bool m_bOpening;         // æ˜¯å¦æ­£åœ¨æ‰“å¼€ä¸­ï¼Œç­‰å¾…å›å¤ã€‚
 public:
     CChannelBase(int IndexBase);
     virtual ~CChannelBase();
-    void SetIndex(int index) { m_index = index; }  // ÉèÖÃ×ÓÓ²¼şºÅ
+    void SetIndex(int index) { m_index = index; }  // è®¾ç½®å­ç¡¬ä»¶å·
     void SetName(const char* name);
     bool BOpen() { return m_hDialog != 0; }
 
-    int GetIndex() { return m_index; } // »ñÈ¡×ÓÓ²¼şºÅ£¬²»Í¬Ó²¼ş´Ó0¿ªÊ¼±àºÅ¡£
-    int GetChannelIndex() { return m_channelIndexBase + m_index; } // »ñÈ¡Í¨µÀºÅ¡£BVCU_SUBDEV_INDEXMAJOR_*
+    int GetIndex() { return m_index; } // è·å–å­ç¡¬ä»¶å·ï¼Œä¸åŒç¡¬ä»¶ä»0å¼€å§‹ç¼–å·ã€‚
+    int GetChannelIndex() { return m_channelIndexBase + m_index; } // è·å–é€šé“å·ã€‚BVCU_SUBDEV_INDEXMAJOR_*
     const char* GetName() { return m_name; }
     int GetSupportMediaDir() { return m_supportMediaDir; }
 
-    // ²»Òªµ÷ÓÃ£¬µ×²ã½»»¥½Ó¿Ú
+    // ä¸è¦è°ƒç”¨ï¼Œåº•å±‚äº¤äº’æ¥å£
     BVCSP_HDialog GetHDialog() { return m_hDialog; }
     int  GetOpenDir() { return m_openMediaDir; }
     void SetHialog(BVCSP_HDialog hDialog, int mediaDir) { m_hDialog = hDialog; m_openMediaDir = mediaDir; }
@@ -42,23 +42,24 @@ public:
     static bvcsp_OnDialogEvent g_bvcsp_onevent;
 };
 
-// ÒôÊÓÆµÍ¨µÀ
+// éŸ³è§†é¢‘é€šé“
 class CAVChannelBase : public CChannelBase
 {
 public:
-    // ======= ĞèÒªÊµÏÖµÄ¹¦ÄÜ½Ó¿Ú
-    virtual void OnRecvAudio(long long iPTS, const void* pkt, int len) = 0;   // ÊÕµ½Æ½Ì¨·¢À´µÄÒôÆµÊı¾İ¡£±àÂëĞÅÏ¢Í¬ReplySDP()¡£
-    virtual BVCU_Result OnPTZCtrl(const BVCU_PUCFG_PTZControl* ptzCtrl) = 0;   // ÊÕµ½Æ½Ì¨·¢À´µÄÔÆÌ¨¿ØÖÆÃüÁî¡£
-    //virtual const BVCU_PUCFG_EncoderChannel* OnGetEncoder() = 0;  // ÊÕµ½Æ½Ì¨²éÑ¯±àÂëÅäÖÃÇëÇó
-    //virtual BVCU_Result OnSetEncoder(const BVCU_PUCFG_EncoderChannel* param) = 0;  // ÊÕµ½Æ½Ì¨ÉèÖÃ±àÂëÅäÖÃÇëÇó
+    // ======= éœ€è¦å®ç°çš„åŠŸèƒ½æ¥å£
+    virtual void OnRecvAudio(long long iPTS, const void* pkt, int len) = 0;   // æ”¶åˆ°å¹³å°å‘æ¥çš„éŸ³é¢‘æ•°æ®ã€‚ç¼–ç ä¿¡æ¯åŒReplySDP()ã€‚
+    virtual BVCU_Result OnPTZCtrl(const BVCU_PUCFG_PTZControl* ptzCtrl) = 0;   // æ”¶åˆ°å¹³å°å‘æ¥çš„äº‘å°æ§åˆ¶å‘½ä»¤ã€‚
+    virtual BVCU_PUCFG_PTZAttr* OnGetPTZParam() = 0;   // æ”¶åˆ°å¹³å°å‘æ¥çš„äº‘å°æŸ¥è¯¢å‘½ä»¤ã€‚
+    //virtual const BVCU_PUCFG_EncoderChannel* OnGetEncoder() = 0;  // æ”¶åˆ°å¹³å°æŸ¥è¯¢ç¼–ç é…ç½®è¯·æ±‚
+    //virtual BVCU_Result OnSetEncoder(const BVCU_PUCFG_EncoderChannel* param) = 0;  // æ”¶åˆ°å¹³å°è®¾ç½®ç¼–ç é…ç½®è¯·æ±‚
 public:
-    CAVChannelBase(bool bVideoIn, bool bAudioIn, bool bAudioOut, bool ptz);// ÊÇ·ñÖ§³Ö£ºÊÓÆµ²É¼¯£¬ÒôÆµ²É¼¯£¬ÒôÆµ²¥·Å£¬ÔÆÌ¨
+    CAVChannelBase(bool bVideoIn, bool bAudioIn, bool bAudioOut, bool ptz);// æ˜¯å¦æ”¯æŒï¼šè§†é¢‘é‡‡é›†ï¼ŒéŸ³é¢‘é‡‡é›†ï¼ŒéŸ³é¢‘æ’­æ”¾ï¼Œäº‘å°
     virtual ~CAVChannelBase() {}
-    // »Ø¸´ ´ò¿ªÇëÇó, ²»Ö§³ÖµÄ¿ÉÒÔÎª¿Õ¡£ÊÕµ½´ò¿ªÇëÇóºó£¬ĞèÒªµ÷ÓÃReplySDP»Ø¸´ÇëÇó¡£
-    BVCU_Result ReplySDP(BVCU_Result result, const BVCSP_VideoCodec* video, const BVCSP_AudioCodec* audio); // ÊÇ·ñ³É¹¦¡¢ÊÓÆµSDP¡¢ÒôÆµSDP
+    // å›å¤ æ‰“å¼€è¯·æ±‚, ä¸æ”¯æŒçš„å¯ä»¥ä¸ºç©ºã€‚æ”¶åˆ°æ‰“å¼€è¯·æ±‚åï¼Œéœ€è¦è°ƒç”¨ReplySDPå›å¤è¯·æ±‚ã€‚
+    BVCU_Result ReplySDP(BVCU_Result result, const BVCSP_VideoCodec* video, const BVCSP_AudioCodec* audio); // æ˜¯å¦æˆåŠŸã€è§†é¢‘SDPã€éŸ³é¢‘SDP
     BVCU_Result WriteVideo(long long iPTS, const char* pkt, int len);
     BVCU_Result WriteAudio(long long iPTS, const char* pkt, int len);
-    // ²éÑ¯
+    // æŸ¥è¯¢
     bool BSupportVideoIn() { return (m_supportMediaDir & BVCU_MEDIADIR_VIDEOSEND) != 0; }
     bool BSupportAudioIn() { return (m_supportMediaDir & BVCU_MEDIADIR_AUDIOSEND) != 0; }
     bool BSupportAudioOut() { return (m_supportMediaDir & BVCU_MEDIADIR_AUDIORECV) != 0; }
@@ -68,36 +69,36 @@ public:
     bool BNeedAudioOut() { return (m_openMediaDir & BVCU_MEDIADIR_AUDIORECV) != 0; }
 
 protected:
-    bool m_bptz; // ÊÇ·ñÖ§³ÖÔÆÌ¨¡£
+    bool m_bptz; // æ˜¯å¦æ”¯æŒäº‘å°ã€‚
 };
 
-// GPS Í¨µÀ
+// GPS é€šé“
 class CGPSChannelBase : public CChannelBase
 {
 public:
-    // ======= ĞèÒªÊµÏÖµÄ¹¦ÄÜ½Ó¿Ú
-    virtual const BVCU_PUCFG_GPSData* OnGetGPSData() = 0;   // ÊÕµ½²éÑ¯¶¨Î»
-    virtual const BVCU_PUCFG_GPSParam* OnGetGPSParam() = 0; // ÊÕµ½²éÑ¯ÅäÖÃ
-    virtual BVCU_Result OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam) = 0; // ÊÕµ½ĞŞ¸ÄÅäÖÃ
+    // ======= éœ€è¦å®ç°çš„åŠŸèƒ½æ¥å£
+    virtual const BVCU_PUCFG_GPSData* OnGetGPSData() = 0;   // æ”¶åˆ°æŸ¥è¯¢å®šä½
+    virtual const BVCU_PUCFG_GPSParam* OnGetGPSParam() = 0; // æ”¶åˆ°æŸ¥è¯¢é…ç½®
+    virtual BVCU_Result OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam) = 0; // æ”¶åˆ°ä¿®æ”¹é…ç½®
 public:
     CGPSChannelBase();
     virtual ~CGPSChannelBase() {}
-    // ·¢ËÍ GPSÊı¾İ
+    // å‘é€ GPSæ•°æ®
     BVCU_Result WriteData(const BVCU_PUCFG_GPSData* pGPSData);
 };
 
-// ´®¿Ú Í¨µÀ
+// ä¸²å£ é€šé“
 class CTSPChannelBase : public CChannelBase
 {
 public:
-    // ======= ĞèÒªÊµÏÖµÄ¹¦ÄÜ½Ó¿Ú
-    virtual void OnRecvData(const void* pkt, int len) = 0;   // ÊÕµ½Æ½Ì¨·¢¸ø´®¿ÚµÄÊı¾İ¡£
-    virtual const BVCU_PUCFG_SerialPort* OnGetTSPParam() = 0; // ÊÕµ½²éÑ¯ÅäÖÃ
-    virtual BVCU_Result OnSetTSPParam(const BVCU_PUCFG_SerialPort* pParam) = 0; // ÊÕµ½ĞŞ¸ÄÅäÖÃ
+    // ======= éœ€è¦å®ç°çš„åŠŸèƒ½æ¥å£
+    virtual void OnRecvData(const void* pkt, int len) = 0;   // æ”¶åˆ°å¹³å°å‘ç»™ä¸²å£çš„æ•°æ®ã€‚
+    virtual const BVCU_PUCFG_SerialPort* OnGetTSPParam() = 0; // æ”¶åˆ°æŸ¥è¯¢é…ç½®
+    virtual BVCU_Result OnSetTSPParam(const BVCU_PUCFG_SerialPort* pParam) = 0; // æ”¶åˆ°ä¿®æ”¹é…ç½®
     virtual void OnPLI() {}
 public:
     CTSPChannelBase();
     virtual ~CTSPChannelBase() {}
-    // ·¢ËÍ ´®¿ÚÊı¾İ ¸øÆ½Ì¨
+    // å‘é€ ä¸²å£æ•°æ® ç»™å¹³å°
     BVCU_Result WriteData(const char* pkt, int len);
 };

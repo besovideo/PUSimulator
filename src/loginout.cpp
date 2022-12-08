@@ -52,6 +52,7 @@ void CPUSession::RegisterChannel() {
     AddTSPChannel(m_pTSP);
     m_pMedia = new CMediaChannel();
     AddAVChannel(m_pMedia);
+    SetPTZCount(1);
 }
 void CPUSession::HandleEvent(time_t nowTime)
 {

@@ -405,6 +405,7 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_PU_USER_MODUSER,  //修改设备使用者。输入类型：BVCU_PUCFG_UserInfo；输出类型：无；触发类型：同名Notify
     BVCU_SUBMETHOD_PU_USER_DELUSER,  //删除设备使用者。输入类型：BVCU_PUCFG_User；输出类型：无；触发类型：同名Notify
     BVCU_SUBMETHOD_PU_USER_OPERATE,  //绑定或解绑设备。输入类型：BVCU_PUCFG_UserOperate；输出类型：无；触发类型：同名Notify
+    BVCU_SUBMETHOD_PU_SNAPSHOT_ONE,  //手动抓拍一张图片并上传。输入类型：无；输出类型：BVCU_Search_FileInfo；
 
     //User部分---------------------------
     BVCU_SUBMETHOD_USER_ADDGROUP = 0x22000, //添加用户组。输入类型：BVCU_UCFG_UserGroupInfo；输出类型：BVCU_UCFG_UserGroup；触发类型：同名Notify

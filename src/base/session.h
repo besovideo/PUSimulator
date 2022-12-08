@@ -56,6 +56,7 @@ public:
     void SetAlertInCount(int count);  // 报警输入数
     void SetAlertOutCount(int count); // 报警输出数
     void SetStorageCount(int count);  // 存储设备数
+    void SetPTZCount(int count);  // 云台设备数
     void SetBootDuration(int duration); // 已开机时长，秒。
     void SetDevicePosition(int lat, int lng);  // 设备配置位置。
     // 注册通道信息

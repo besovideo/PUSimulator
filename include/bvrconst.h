@@ -76,6 +76,10 @@ typedef enum BVRAuthResult {
 
     AUTH_Result_Local_Status = 260, // 内网认证检查状态错误
     AUTH_Result_Local_Expire = 261, // 内网认证过期
+    AUTH_Result_Local_SN = 262, // 内网认证SN不匹配
+    AUTH_Result_Local_Offline_Trial = 263, // 内网认证不允许离线试用
+    AUTH_Result_Local_InnerDataDecode = 264, // 内网认证内部数据解码错误
+    AUTH_Result_Local_InnerDataFormat = 265, // 内网认证内部数据解析错误
 
     AUTH_Result_OK = 1024,
     AUTH_Result_Trail_OK = 1025  // 试用

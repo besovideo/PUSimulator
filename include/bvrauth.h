@@ -158,6 +158,8 @@ int bvr_log(char* data);
 
 // 是否重连, 1重连; 2不重连; 其它
 int bvr_set_config_reconnect(BVRContext* ctx, int isReConnect);
+// 是否连接 1连接, 2不连接(一次都不连接)
+int bvr_set_config_connect(BVRContext* ctx, int isConnect);
 
 #ifdef __cplusplus
 }

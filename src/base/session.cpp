@@ -99,6 +99,10 @@ void CPUSessionBase::SetStorageCount(int count)
 {
     m_deviceInfo.iStorageCount = count;
 }
+void CPUSessionBase::SetPTZCount(int count)
+{
+    m_deviceInfo.iPTZCount = count;
+}
 void CPUSessionBase::SetBootDuration(int duration)
 {
     m_sesParam.stEntityInfo.iBootDuration = duration;
@@ -267,6 +271,7 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
         eventAlarm.iSubDevIdx = index;
         eventAlarm.iValue = value;
         eventAlarm.bEnd = bEnd;
+        sprintf_s(eventAlarm.szKey, sizeof(eventAlarm.szKey), "PUSimulatorE_%lld", time(NULL));
         if (desc)
             strncpy_s(eventAlarm.szEventDesc, sizeof(eventAlarm.szEventDesc), desc, _TRUNCATE);
         if (m_GPSChannels[0])
@@ -493,6 +498,21 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
             {
                 const BVCU_PUCFG_GPSParam* pParam = pSession->m_GPSChannels[index]->OnGetGPSParam();
+                if (pParam)
+                {
+                    szResult.stContent.iDataCount = 1;
+                    szResult.stContent.pData = (void*)pParam;
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_PTZATTR)
+        {   // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
+            int index = pCommand->iTargetIndex;
+            if (index < MAX_AV_CHANNEL_COUNT && pSession->m_avChannels[index] != 0)
+            {
+                const BVCU_PUCFG_PTZAttr* pParam = pSession->m_avChannels[index]->OnGetPTZParam();
                 if (pParam)
                 {
                     szResult.stContent.iDataCount = 1;

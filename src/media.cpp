@@ -1,4 +1,4 @@
-#include <string>
+ï»¿#include <string>
 #include "media.h"
 #include "config.h"
 
@@ -20,6 +20,21 @@ CMediaChannel::CMediaChannel()
     m_audioFile = 0;
     m_videoFile = 0;
     m_audioPackLen = 320;
+    // å¡«å……æµ‹è¯•äº‘å°æ•°æ®
+    memset(&m_ptzAttr, 0x00, sizeof(m_ptzAttr));
+    m_ptzAttr.iPTZProtocolAll[0] = BVCU_ALERTIN_HARDWARE_485;
+    m_ptzAttr.iPTZProtocolAll[1] = BVCU_ALERTIN_HARDWARE_232;
+    m_ptzAttr.iPTZProtocolIndex = 1;
+    m_ptzAttr.stRS232.iDataBit = 8;
+    m_ptzAttr.stRS232.iStopBit = 0;
+    m_ptzAttr.stRS232.iParity = 1;
+    m_ptzAttr.stRS232.iBaudRate = 9600;
+    m_ptzAttr.stRS232.iFlowControl = 0;
+    m_ptzAttr.iAddress = 128;
+    m_ptzAttr.stPreset[0].iID = 1;
+    strncpy_s(m_ptzAttr.stPreset[0].szPreset, sizeof(m_ptzAttr.stPreset[0].szPreset), "test", _TRUNCATE);
+    m_ptzAttr.stPreset[1].iID = -1;
+    m_ptzAttr.stCruise[0].iID = -1;
 }
 
 static char* findhead(char* data, int len) {
@@ -50,32 +65,32 @@ char* CMediaChannel::ReadVideo(char* buf, int* len)
         int onelen = fread(pRead, 1, 160, m_videoFile);
         readlen += onelen;
         if (onelen < 160)
-        { // ¿ÉÄÜ¶Áµ½ÎÄ¼ş½áÎ²ÁË£¬´ÓÍ·ÔÙÀ´
+        { // å¯èƒ½è¯»åˆ°æ–‡ä»¶ç»“å°¾äº†ï¼Œä»å¤´å†æ¥
             fseek(m_videoFile, 0, SEEK_SET);
             if (pStart != 0)
                 pEnd = pRead + onelen;
             break;
         }
         if (pRead != buf)
-        {  // ·ÀÖ¹handÍ·±»ÇĞ¶Ï£¬µ¼ÖÂÕÒ²»µ½¡£
+        {  // é˜²æ­¢handå¤´è¢«åˆ‡æ–­ï¼Œå¯¼è‡´æ‰¾ä¸åˆ°ã€‚
             pRead -= 3;
             onelen += 3;
         }
-        // ÕÒ00 00 00 01 Í·
+        // æ‰¾00 00 00 01 å¤´
         if (pStart == 0)
         {
             pStart = findhead(pRead, onelen);
             if (pStart != 0)
-            {  // ÍùºóÒÆ£¬×¼±¸ÕÒend
+            {  // å¾€åç§»ï¼Œå‡†å¤‡æ‰¾end
                 onelen = onelen - (pStart - pRead) - 3;
                 pRead = pStart + 3;
             }
         }
-        if ( pStart != 0 && pEnd == 0 && readlen > 160) // ÒÑ¾­ÕÒµ½¿ªÊ¼£¬Ã»ÓĞÕÒµ½½áÎ²£¬Ò»¸öÖ¡°ü²»Ğ¡ÓÚ160£¬·ÀÖ¹sps\ppsµ¥¶À·¢ËÍ¡£
+        if (pStart != 0 && pEnd == 0 && readlen > 160) // å·²ç»æ‰¾åˆ°å¼€å§‹ï¼Œæ²¡æœ‰æ‰¾åˆ°ç»“å°¾ï¼Œä¸€ä¸ªå¸§åŒ…ä¸å°äº160ï¼Œé˜²æ­¢sps\ppså•ç‹¬å‘é€ã€‚
         {
             pEnd = findhead(pRead, onelen);
             if (pEnd != 0)
-            {  // ¶à¶ÁÁË£¬
+            {  // å¤šè¯»äº†ï¼Œ
                 int moreLen = onelen - (pEnd - pRead);
                 fseek(m_videoFile, -moreLen, SEEK_CUR);
                 break;
@@ -97,20 +112,20 @@ char* CMediaChannel::ReadAudio(char* buf, int* len)
     if (buflen < m_audioPackLen || m_audioFile == 0)
         return 0;
     int packlen = m_audioPackLen;
-    if (m_audioPackLen == 2048) // maac, ¶ÁÈ¡°ü³¤¶È
+    if (m_audioPackLen == 2048) // maac, è¯»å–åŒ…é•¿åº¦
     {
         int readlen = fread(&packlen, 1, 4, m_audioFile);
         if (readlen < 4)
             packlen = 0;
     }
     if (packlen <= 0 || packlen > buflen)
-    {  // ¶ÁÈ¡µ½µÄ °ü´óĞ¡´íÎó
+    {  // è¯»å–åˆ°çš„ åŒ…å¤§å°é”™è¯¯
         fseek(m_audioFile, 0, SEEK_SET);
         return 0;
     }
     int readlen = fread(buf, 1, packlen, m_audioFile);
     if (readlen < packlen)
-    { // ¿ÉÄÜ¶Áµ½ÎÄ¼ş½áÎ²ÁË£¬´ÓÍ·ÔÙÀ´
+    { // å¯èƒ½è¯»åˆ°æ–‡ä»¶ç»“å°¾äº†ï¼Œä»å¤´å†æ¥
         fseek(m_audioFile, 0, SEEK_SET);
         readlen = fread(buf, 1, packlen, m_audioFile);
     }
@@ -123,7 +138,7 @@ void CMediaChannel::Reply()
     static char videoEx[64] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x80, 0x1E, 0xDA, 0x05, 0x02, 0x11, 0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80 };
     static int  videoExLen = 20;
     static char audioEx[2] = { 0x12, 0x88 };
-    // ÒÔÉÏÀ©Õ¹Êı¾İ£¬¶¼ÊÇ¸ù¾İ×Ô´ø ÒôÊÓÆµÎÄ¼şÊı¾İ±àÂë²ÎÊıĞ´ËÀµÄ£¬ĞŞ¸ÄÊı¾İÀ´Ô´Ê±£¬ĞèÒª¸ù¾İÄúµÄÊı¾İÔ´È·¶¨¡£
+    // ä»¥ä¸Šæ‰©å±•æ•°æ®ï¼Œéƒ½æ˜¯æ ¹æ®è‡ªå¸¦ éŸ³è§†é¢‘æ–‡ä»¶æ•°æ®ç¼–ç å‚æ•°å†™æ­»çš„ï¼Œä¿®æ”¹æ•°æ®æ¥æºæ—¶ï¼Œéœ€è¦æ ¹æ®æ‚¨çš„æ•°æ®æºç¡®å®šã€‚
     if (m_bOpening)
     {
         BVCSP_VideoCodec videoSdp;
@@ -146,7 +161,8 @@ void CMediaChannel::Reply()
             audioSdp.iSampleRate = 32000;
             audioSdp.pExtraData = audioEx;
             audioSdp.iExtraDataSize = 2;
-        }else
+        }
+        else
             audioSdp.codec = SAVCODEC_ID_G711A;
 
         ReplySDP(BVCU_RESULT_S_OK, &videoSdp, &audioSdp);
@@ -157,7 +173,7 @@ void CMediaChannel::SendData()
     Reply();
     if (!BOpen() || m_lasttime == 0)
         return;
-    // ========================  ¶¨Ê±´ÓÉè±¸ÖĞ»ñÈ¡×îĞÂÎ»ÖÃ£¬²¢ÉÏ±¨£¬ ÏÂÃæÊÇÄ£ÄâÎ»ÖÃ
+    // ========================  å®šæ—¶ä»è®¾å¤‡ä¸­è·å–æœ€æ–°ä½ç½®ï¼Œå¹¶ä¸ŠæŠ¥ï¼Œ ä¸‹é¢æ˜¯æ¨¡æ‹Ÿä½ç½®
     int now = GetTickCount();
     int dely = now - m_lasttime;
     if (dely < 0) {
@@ -170,9 +186,9 @@ void CMediaChannel::SendData()
         dely -= m_interval;
 
         m_pts = m_pts + m_interval * 1000;
-        static char g_packetbuf[1 * 1024 * 1024]; // ÕâÀïÏŞÖÆÁËÒ»¸öÖ¡µÄ´óĞ¡²»Òª³¬¹ı 1M£¬ÒòÎª×Ô´øµÄÒôÊÓÆµÎÄ¼şÖĞÖ¡Êı¾İ¶¼ºÜĞ¡¡£
+        static char g_packetbuf[1 * 1024 * 1024]; // è¿™é‡Œé™åˆ¶äº†ä¸€ä¸ªå¸§çš„å¤§å°ä¸è¦è¶…è¿‡ 1Mï¼Œå› ä¸ºè‡ªå¸¦çš„éŸ³è§†é¢‘æ–‡ä»¶ä¸­å¸§æ•°æ®éƒ½å¾ˆå°ã€‚
         if (m_audioFile != 0)
-        {  // ÒôÆµ±»´ò¿ªÁË£¬·¢ËÍÒôÆµÊı¾İ¡£
+        {  // éŸ³é¢‘è¢«æ‰“å¼€äº†ï¼Œå‘é€éŸ³é¢‘æ•°æ®ã€‚
             int len = sizeof(g_packetbuf);
             char* pdata = ReadAudio(g_packetbuf, &len);
             if (len > 0)
@@ -180,7 +196,7 @@ void CMediaChannel::SendData()
             //printf("send audio Data, %d\n", len);
         }
         if (m_videoFile != 0)
-        {  // ÊÓÆµ±»´ò¿ªÁË£¬·¢ËÍÊÓÆµÊı¾İ¡£
+        {  // è§†é¢‘è¢«æ‰“å¼€äº†ï¼Œå‘é€è§†é¢‘æ•°æ®ã€‚
             int len = sizeof(g_packetbuf);
             char* pdata = ReadVideo(g_packetbuf, &len);
             if (len > 0)
@@ -188,7 +204,7 @@ void CMediaChannel::SendData()
             //printf("send audio Data, %d\n", len);
         }
     }
-    // =======================  »ñÈ¡ÍøÂç·¢ËÍÍ³¼ÆÊı¾İ£¬¸ù¾İ²Â²âÂëÂÊ£¬¶¯Ì¬µ÷Õû±àÂëÂëÂÊ£¨ÕâÀïÊÇ¼ÙµÄ£©¡£
+    // =======================  è·å–ç½‘ç»œå‘é€ç»Ÿè®¡æ•°æ®ï¼Œæ ¹æ®çŒœæµ‹ç ç‡ï¼ŒåŠ¨æ€è°ƒæ•´ç¼–ç ç ç‡ï¼ˆè¿™é‡Œæ˜¯å‡çš„ï¼‰ã€‚
     dely = now - m_lastAdjtime;
     if (dely >= 2 * 1000 || m_lastAdjtime == 0)
     {
@@ -215,22 +231,22 @@ BVCU_Result CMediaChannel::OnSetName(const char* name)
 }
 BVCU_Result CMediaChannel::OnOpenRequest()
 {
-    // ÕâÀï´ò¿ªÄúµÄÒôÊÓÆµÉè±¸£¬Òì²½´ò¿ª³É¹¦ºó£¬µ÷ÓÃReplySDP()½Ó¿Ú»Ø¸´ÇëÇó¡£
-    // ÒôÊÓÆµÍ¨µÀ¿ÉÄÜ»á¶à´ÎÊÕµ½´ò¿ªÇëÇó£¬ÒòÎªÇëÇó¶à»áĞŞ¸ÄĞèÒªµÄÃ½ÌåÀàĞÍ¡£ËùÒÔÒª×¢Òâ²»ÒªÖØ¸´´ò¿ª¡£
+    // è¿™é‡Œæ‰“å¼€æ‚¨çš„éŸ³è§†é¢‘è®¾å¤‡ï¼Œå¼‚æ­¥æ‰“å¼€æˆåŠŸåï¼Œè°ƒç”¨ReplySDP()æ¥å£å›å¤è¯·æ±‚ã€‚
+    // éŸ³è§†é¢‘é€šé“å¯èƒ½ä¼šå¤šæ¬¡æ”¶åˆ°æ‰“å¼€è¯·æ±‚ï¼Œå› ä¸ºè¯·æ±‚å¤šä¼šä¿®æ”¹éœ€è¦çš„åª’ä½“ç±»å‹ã€‚æ‰€ä»¥è¦æ³¨æ„ä¸è¦é‡å¤æ‰“å¼€ã€‚
     printf("================  recv open media request \n");
     if (BNeedVideoIn())
-    {   // ÇëÇóÊÓÆµ£¬´ò¿ªÊÓÆµÊäÈëÉè±¸
+    {   // è¯·æ±‚è§†é¢‘ï¼Œæ‰“å¼€è§†é¢‘è¾“å…¥è®¾å¤‡
         printf("================  open video media now\n");
         if (m_videoFile == 0)
             m_videoFile = fopen(VIDEO_FILE_PATH_NAME, "rb");
     }
     else if (m_videoFile)
-    {   // ²»ĞèÒªÊÓÆµ£¬Èç¹ûÒÑ¾­´ò¿ª£¬Çë¹Ø±Õ
+    {   // ä¸éœ€è¦è§†é¢‘ï¼Œå¦‚æœå·²ç»æ‰“å¼€ï¼Œè¯·å…³é—­
         fclose(m_videoFile);
         m_videoFile = 0;
     }
     if (BNeedAudioIn())
-    {   // ÇëÇóÒôÆµ£¬´ò¿ªÒôÆµÊäÈëÉè±¸
+    {   // è¯·æ±‚éŸ³é¢‘ï¼Œæ‰“å¼€éŸ³é¢‘è¾“å…¥è®¾å¤‡
         PUConfig puconfig;
         LoadConfig(&puconfig);
         printf("================  open audio media now\n");
@@ -240,32 +256,33 @@ BVCU_Result CMediaChannel::OnOpenRequest()
             m_audioPackLen = 160;
         else if (strstr(puconfig.audioFile, "maac") != nullptr)
         {
-            m_audioPackLen = 2048; // maac ³¤¶ÈÔÚÎÄ¼şÖĞ¡£
-            m_interval = 32; // ×Ô´øµÄ maacµÄÒôÆµ¼ä¸ôÊÇ32ºÁÃë£¬¸ù¾İÄãµÄÊı¾İÔ´¾ö¶¨¡£
-        }else
+            m_audioPackLen = 2048; // maac é•¿åº¦åœ¨æ–‡ä»¶ä¸­ã€‚
+            m_interval = 32; // è‡ªå¸¦çš„ maacçš„éŸ³é¢‘é—´éš”æ˜¯32æ¯«ç§’ï¼Œæ ¹æ®ä½ çš„æ•°æ®æºå†³å®šã€‚
+        }
+        else
             m_audioPackLen = 320; // g711a
     }
     else if (m_audioFile)
-    {   // ²»ĞèÒªÒôÆµ£¬Èç¹ûÒÑ¾­´ò¿ª£¬Çë¹Ø±Õ
+    {   // ä¸éœ€è¦éŸ³é¢‘ï¼Œå¦‚æœå·²ç»æ‰“å¼€ï¼Œè¯·å…³é—­
         fclose(m_audioFile);
         m_audioFile = 0;
     }
     if (BNeedAudioOut())
-    {   // ÇëÇóÒôÆµÊä³ö£¬´ò¿ªÒôÆµÊä³öÉè±¸
+    {   // è¯·æ±‚éŸ³é¢‘è¾“å‡ºï¼Œæ‰“å¼€éŸ³é¢‘è¾“å‡ºè®¾å¤‡
         printf("================  open audio out now\n");
     }
     return BVCU_RESULT_S_OK;
 }
 void CMediaChannel::OnOpen()
 {
-    // Í¨µÀÒÑ¾­½¨Á¢³É¹¦£¬¿ÉÒÔ¿ªÊ¼ÉÏ±¨Êı¾İÁË¡£
+    // é€šé“å·²ç»å»ºç«‹æˆåŠŸï¼Œå¯ä»¥å¼€å§‹ä¸ŠæŠ¥æ•°æ®äº†ã€‚
     printf("================  open media success \n");
     m_lasttime = GetTickCount();
     m_pts = time(0) * 1000000;
 }
 void CMediaChannel::OnClose()
 {
-    // ÕâÀïÓ¦¸Ã¿ÉÒÔ¹Ø±ÕÄúµÄÒôÊÓÆµÊäÈëÉè±¸ÁË¡£
+    // è¿™é‡Œåº”è¯¥å¯ä»¥å…³é—­æ‚¨çš„éŸ³è§†é¢‘è¾“å…¥è®¾å¤‡äº†ã€‚
     printf("================  media closed \n");
     m_lasttime = 0;
     m_lastAdjtime = 0;
@@ -283,7 +300,7 @@ void CMediaChannel::OnClose()
 }
 void CMediaChannel::OnPLI()
 {
-    // ÕâÀïÓ¦¸ÃÍ¨ÖªÄúµÄÊÓÆµ±àÂëÆ÷Éú³É¹Ø¼üÖ¡¡£
+    // è¿™é‡Œåº”è¯¥é€šçŸ¥æ‚¨çš„è§†é¢‘ç¼–ç å™¨ç”Ÿæˆå…³é”®å¸§ã€‚
     printf("================  media pli \n");
     int now = GetTickCount();
     int dely = now - m_lastPlitime;
@@ -291,7 +308,7 @@ void CMediaChannel::OnPLI()
     {
         m_lastPlitime = now;
         if (m_videoFile)
-        {   // ÕâÀïÌø×ªµ½ÎÄ¼ş¿ªÊ¼Î»ÖÃ£¬ÊÇÒòÎª ÎÄ¼ş¿ªÊ¼Î»ÖÃÊÇ¹Ø¼üÖ¡¡£
+        {   // è¿™é‡Œè·³è½¬åˆ°æ–‡ä»¶å¼€å§‹ä½ç½®ï¼Œæ˜¯å› ä¸º æ–‡ä»¶å¼€å§‹ä½ç½®æ˜¯å…³é”®å¸§ã€‚
             fseek(m_videoFile, 0, SEEK_SET);
         }
     }
@@ -303,6 +320,72 @@ void CMediaChannel::OnRecvAudio(long long iPTS, const void* pkt, int len)
 
 BVCU_Result CMediaChannel::OnPTZCtrl(const BVCU_PUCFG_PTZControl* ptzCtrl)
 {
-    printf("================  media recv ptz control. command:%d %s\n", ptzCtrl->iPTZCommand, ptzCtrl->bStop?"stop":"start");
+    printf("================  media recv ptz control. command:%d %s\n", ptzCtrl->iPTZCommand, ptzCtrl->bStop ? "stop" : "start");
+    if (ptzCtrl->iPTZCommand == BVCU_PTZ_COMMAND_PRESET_SET) {
+        if (ptzCtrl->iParam1 < 256 && ptzCtrl->iParam1 >= 0 && ptzCtrl->iParam2 != NULL) {
+            for (int i = 0; i < 256; ++i) {
+                if (m_ptzAttr.stPreset[i].iID < 0 || m_ptzAttr.stPreset[i].iID == ptzCtrl->iParam1) {
+                    if (m_ptzAttr.stPreset[i].iID <= 0 && i < 255) {
+                        m_ptzAttr.stPreset[i + 1].iID = -1;
+                    }
+                    m_ptzAttr.stPreset[i].iID = ptzCtrl->iParam1;
+                    strncpy_s(m_ptzAttr.stPreset[i].szPreset, sizeof(m_ptzAttr.stPreset[i].szPreset), (char*)(*(intptr_t*)(&ptzCtrl->iParam2)), _TRUNCATE);
+                    break;
+                }
+            }
+        }
+    }
+    else if (ptzCtrl->iPTZCommand == BVCU_PTZ_COMMAND_PRESET_SETNAME) {
+        for (int i = 0; i < 256; ++i) {
+            if (m_ptzAttr.stPreset[i].iID == ptzCtrl->iParam1 && ptzCtrl->iParam2 != NULL) {
+                strncpy_s(m_ptzAttr.stPreset[i].szPreset, sizeof(m_ptzAttr.stPreset[i].szPreset), (char*)(*(intptr_t*)(&ptzCtrl->iParam2)), _TRUNCATE);
+                break;
+            }
+        }
+    }
+    else if (ptzCtrl->iPTZCommand == BVCU_PTZ_COMMAND_PRESET_DEL) {
+        for (int i = 0; i < 256; ++i) {
+            if (m_ptzAttr.stPreset[i].iID < 0) {
+                break;
+            }
+            else if (m_ptzAttr.stPreset[i].iID == ptzCtrl->iParam1) {
+                for (int j = i; j < 255; ++j) {
+                    m_ptzAttr.stPreset[j].iID = m_ptzAttr.stPreset[j + 1].iID;
+                    strncpy_s(m_ptzAttr.stPreset[j].szPreset, sizeof(m_ptzAttr.stPreset[j].szPreset), m_ptzAttr.stPreset[j + 1].szPreset, _TRUNCATE);
+                }
+                break;
+            }
+        }
+    }
+    if (ptzCtrl->iPTZCommand == BVCU_PTZ_COMMAND_CRUISE_SET) {
+        if (ptzCtrl->iParam1 < 31 && ptzCtrl->iParam1 >= 0 && ptzCtrl->iParam2 != NULL) {
+            for (int i = 0; i < 31; ++i) {
+                if (m_ptzAttr.stCruise[i].iID < 0 || m_ptzAttr.stCruise[i].iID == ptzCtrl->iParam1) {
+                    if (m_ptzAttr.stCruise[i].iID <= 0 && i < 255) {
+                        m_ptzAttr.stCruise[i + 1].iID = -1;
+                    }
+                    BVCU_PUCFG_Cruise* psource = (BVCU_PUCFG_Cruise*)(*(intptr_t*)(&ptzCtrl->iParam2));
+                    m_ptzAttr.stCruise[i].iID = ptzCtrl->iParam1;
+                    strncpy_s(m_ptzAttr.stCruise[i].szName, sizeof(m_ptzAttr.stCruise[i].szName), psource->szName, _TRUNCATE);
+                    for (int j = 0; j < 32; j++)
+                        m_ptzAttr.stCruise[i].stPoints[j] = psource->stPoints[j];
+                    break;
+                }
+            }
+        }
+    }
+    else if (ptzCtrl->iPTZCommand == BVCU_PTZ_COMMAND_CRUISE_DEL) {
+        for (int i = 0; i < 256; ++i) {
+            if (m_ptzAttr.stCruise[i].iID < 0) {
+                break;
+            }
+            else if (m_ptzAttr.stCruise[i].iID == ptzCtrl->iParam1) {
+                for (int j = i; j < 31; ++j) {
+                    m_ptzAttr.stCruise[j] = m_ptzAttr.stCruise[j + 1];
+                }
+                break;
+            }
+        }
+    }
     return BVCU_RESULT_S_OK;
 }

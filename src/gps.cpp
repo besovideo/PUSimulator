@@ -1,4 +1,4 @@
-#include <string>
+ï»¿#include <string>
 #include "gps.h"
 #include "config.h"
 
@@ -12,37 +12,40 @@ CGPSChannel::CGPSChannel()
     m_position.iStarCount = 3;
     m_position.iSatelliteSignal = BVCU_PUCFG_SATELLITE_GPS | BVCU_PUCFG_SATELLITE_BDS;
 
-    // ´ÓÅäÖÃÎÄ¼þÖÐ¼ÓÔØÅäÖÃ¡£
+    // ä»Žé…ç½®æ–‡ä»¶ä¸­åŠ è½½é…ç½®ã€‚
     PUConfig puconfig;
     LoadConfig(&puconfig);
-    if (0 >= puconfig.interval || puconfig.interval <= 10*60)
+    if (0 >= puconfig.interval || puconfig.interval <= 10 * 60)
         puconfig.interval = 5;
     m_lat = puconfig.lat;
     m_lng = puconfig.lng;
     SetName(puconfig.gpsName);
     m_lasttime = time(NULL) - puconfig.interval;
     srand(m_lasttime);
-    int randLat = rand() + 100000*g_count;
-    int randLng = rand() + 100000*g_count;
+    int randLat = rand() + 100000 * g_count;
+    int randLng = rand() + 100000 * g_count;
     int imod = g_count % 4;
     if (imod == 0)
     {
         m_position.iLatitude = m_lat + randLat;
         m_position.iLongitude = m_lng + randLng;
-    }else if (imod == 1){
+    }
+    else if (imod == 1) {
         m_position.iLatitude = m_lat - randLat;
         m_position.iLongitude = m_lng + randLng;
-    }else if (imod == 2) {
+    }
+    else if (imod == 2) {
         m_position.iLatitude = m_lat + randLat;
         m_position.iLongitude = m_lng - randLng;
-    }else{
+    }
+    else {
         m_position.iLatitude = m_lat - randLat;
         m_position.iLongitude = m_lng - randLng;
     }
     g_count++;
     m_chagedu = abs(m_lng - m_position.iLongitude) + abs(m_lat - m_position.iLatitude);
 
-    // GPS ²ÎÊý
+    // GPS å‚æ•°
     memset(&m_param, 0x00, sizeof(m_param));
     m_param.bEnable = 1;
     strncpy_s(m_param.szName, sizeof(m_param.szName), GetName(), _TRUNCATE);
@@ -53,9 +56,9 @@ CGPSChannel::CGPSChannel()
 }
 
 bool CGPSChannel::ReadGPSData()
-{   // Ä£Äâ´ÓÉè±¸ÖÐ¶ÁÈ¡GPSÎ»ÖÃÊý¾Ý
-    time_t now = time(NULL);  // Ê±¼äÓ¦¸ÃÒ²ÊÇ´ÓGPSÉè±¸ÖÐ¶ÁÈ¡
-    tm* ptm = (tm*)gmtime(&now);  // ³õÌØÊâËµÃ÷£¬Íø´«µÄÊ±¼ä¶¼ÊÇUTCÊ±¼ä¡£
+{   // æ¨¡æ‹Ÿä»Žè®¾å¤‡ä¸­è¯»å–GPSä½ç½®æ•°æ®
+    time_t now = time(NULL);  // æ—¶é—´åº”è¯¥ä¹Ÿæ˜¯ä»ŽGPSè®¾å¤‡ä¸­è¯»å–
+    tm* ptm = (tm*)gmtime(&now);  // åˆç‰¹æ®Šè¯´æ˜Žï¼Œç½‘ä¼ çš„æ—¶é—´éƒ½æ˜¯UTCæ—¶é—´ã€‚
     m_position.stTime.iYear = ptm->tm_year + 1900;
     m_position.stTime.iMonth = ptm->tm_mon + 1;
     m_position.stTime.iDay = ptm->tm_mday;
@@ -128,7 +131,7 @@ void CGPSChannel::UpdateData()
 {
     if (!BOpen())
         return;
-    // ========================  ¶¨Ê±´ÓÉè±¸ÖÐ»ñÈ¡×îÐÂÎ»ÖÃ£¬²¢ÉÏ±¨£¬ ÏÂÃæÊÇÄ£ÄâÎ»ÖÃ
+    // ========================  å®šæ—¶ä»Žè®¾å¤‡ä¸­èŽ·å–æœ€æ–°ä½ç½®ï¼Œå¹¶ä¸ŠæŠ¥ï¼Œ ä¸‹é¢æ˜¯æ¨¡æ‹Ÿä½ç½®
     time_t now = time(NULL);
     int dely = now - m_lasttime;
     if (dely >= m_param.iReportInterval)
@@ -153,43 +156,43 @@ BVCU_Result CGPSChannel::OnSetName(const char* name)
 }
 BVCU_Result CGPSChannel::OnOpenRequest()
 {
-    // ÕâÀï´ò¿ªÄúµÄGPSÉè±¸£¬²¢¸ù¾ÝÉèÖÃµÄÉÏ±¨¼ä¸ôÉÏ±¨Î»ÖÃ
+    // è¿™é‡Œæ‰“å¼€æ‚¨çš„GPSè®¾å¤‡ï¼Œå¹¶æ ¹æ®è®¾ç½®çš„ä¸ŠæŠ¥é—´éš”ä¸ŠæŠ¥ä½ç½®
     printf("================  recv open gps request \n");
     return BVCU_RESULT_S_OK;
 }
 void CGPSChannel::OnOpen()
 {
-    // Í¨µÀÒÑ¾­½¨Á¢³É¹¦£¬¿ÉÒÔ¿ªÊ¼ÉÏ±¨Êý¾ÝÁË¡£
+    // é€šé“å·²ç»å»ºç«‹æˆåŠŸï¼Œå¯ä»¥å¼€å§‹ä¸ŠæŠ¥æ•°æ®äº†ã€‚
     printf("================  open gps success \n");
 }
 void CGPSChannel::OnClose()
 {
-    // ÕâÀïÓ¦¸Ã¿ÉÒÔ¹Ø±ÕÄúµÄGPSÉè±¸ÁË¡£
+    // è¿™é‡Œåº”è¯¥å¯ä»¥å…³é—­æ‚¨çš„GPSè®¾å¤‡äº†ã€‚
     printf("================  gps closed \n");
-    return ;
+    return;
 }
 void CGPSChannel::OnPLI()
 {
-    // GPSÊÕµ½PLIÇëÇó£¬ÊÇÒòÎªÓÐÐÂ³ÉÔ±´ò¿ªÍ¨µÀ£¬µ«Ã»ÓÐÊÕµ½Êý¾Ý(ÒòÎªÉè±¸Ö»ÉÏ´«Ò»Â·Á÷£¬ÆäËûµÄ´ò¿ªÇëÇó±»·þÎñÆ÷´¦ÀíÁË)¡£
-    // ´ËÊ±Ó¦¸ÃÁ¢¼´½«×îÐÂµÄ¶¨Î»ÐÅÏ¢·¢ËÍ³öÈ¥
+    // GPSæ”¶åˆ°PLIè¯·æ±‚ï¼Œæ˜¯å› ä¸ºæœ‰æ–°æˆå‘˜æ‰“å¼€é€šé“ï¼Œä½†æ²¡æœ‰æ”¶åˆ°æ•°æ®(å› ä¸ºè®¾å¤‡åªä¸Šä¼ ä¸€è·¯æµï¼Œå…¶ä»–çš„æ‰“å¼€è¯·æ±‚è¢«æœåŠ¡å™¨å¤„ç†äº†)ã€‚
+    // æ­¤æ—¶åº”è¯¥ç«‹å³å°†æœ€æ–°çš„å®šä½ä¿¡æ¯å‘é€å‡ºåŽ»
     printf("================  gps pli \n");
     UpdateData();
 }
 const BVCU_PUCFG_GPSData* CGPSChannel::OnGetGPSData()
-{   // ´ÓÉè±¸ÖÐ¶ÁÈ¡GPSÎ»ÖÃ²¢·µ»Ø
+{   // ä»Žè®¾å¤‡ä¸­è¯»å–GPSä½ç½®å¹¶è¿”å›ž
     printf("================  gps get data \n");
     ReadGPSData();
     return &m_position;
 }
 const BVCU_PUCFG_GPSParam* CGPSChannel::OnGetGPSParam()
-{   // ²éÑ¯GPSÅäÖÃ
+{   // æŸ¥è¯¢GPSé…ç½®
     printf("================  gps get param. report interval: %ds\n", m_param.iReportInterval);
     return &m_param;
 }
 BVCU_Result CGPSChannel::OnSetGPSParam(const BVCU_PUCFG_GPSParam* pParam)
 {
     printf("================  gps set param. report interval: %ds\n", pParam->iReportInterval);
-    // ÉèÖÃÉÏ±¨¼ä¸ô µÈ²ÎÊý
+    // è®¾ç½®ä¸ŠæŠ¥é—´éš” ç­‰å‚æ•°
     m_param.iReportInterval = pParam->iReportInterval;
     if (0 >= m_param.iReportInterval || m_param.iReportInterval <= 10 * 60)
         m_param.iReportInterval = 5;

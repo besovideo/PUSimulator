@@ -2,7 +2,7 @@
 #define __BV_CSP_H__
 
 #ifdef  __cplusplus
-extern "C"{
+extern "C" {
 #endif
 #include "SAVCodec.h"
 #include "BVCUConst.h"
@@ -769,6 +769,19 @@ LIBBVCSP_API BVCU_Result BVCSP_Encrypt_Set(BVCSP_EncryptKey* pEncryptKey);
 *        BVCU_RESULT_E_BADSTATE： 库没有初始化成功。
 */
 LIBBVCSP_API BVCU_Result BVCSP_Encrypt_Get(BVCSP_EncryptKey* pEncryptKey);
+
+
+/**
+* 向会话通道中写数据。也可以用于被动Dialog。
+* @param[in] hDialog: BVCSP_Dialog_Open返回的Dialog句柄.
+* @param[in] pData: 写入的数据。
+* @return: 常见返回值
+*        BVCU_RESULT_S_OK: 成功
+*        BVCU_RESULT_E_NOTEXIST: 会话不存在
+*        BVCU_RESULT_E_UNSUPPORTED: 不支持的操作
+*        BVCU_RESULT_E_BADSTATE： 库没有初始化成功。
+*/
+LIBBVCSP_API BVCU_Result BVCSP_Dialog_WriteRTP(BVCSP_HDialog hDialog, BVCSP_Packet* pData);
 
 #ifdef  __cplusplus
 };
