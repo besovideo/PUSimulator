@@ -113,6 +113,7 @@ typedef struct _BVCU_Event_Source
     int iLongitude;                         // 经度，东经是正值，西经负值，单位1/10000000度
     int iLatitude;                          // 纬度，北纬是正值，南纬是负值，单位1/10000000度
     char szKey[BVCU_MAX_ID_NAME_LEN + 1];   // 报警唯一ID，用于追踪（处理）报警。报警者生产（需要全局唯一）。
+    char szPayload[512];                    // 报警负载, 数据格式: json
 } BVCU_Event_Source;
 
 //客户端查询返回的存储的事件。CU可以修改其中的处警部分
@@ -132,7 +133,7 @@ typedef struct _BVCU_Event_Action
     int iCount;    //动作次数
     int iDelay;    //第一次执行动作的延时时间。单位毫秒。
     int iInterval; //每次动作执行完后等待的时间间隔。单位毫秒
-    void *pAction; //动作，BVCU_Event_Action_*
+    void* pAction; //动作，BVCU_Event_Action_*
 } BVCU_Event_Action;
 
 typedef struct _BVCU_Event_Action_PURecord
@@ -234,7 +235,7 @@ typedef struct _BVCU_Event_Action_Custom
     char szID[BVCU_MAX_ID_NAME_LEN + 1]; // ID或用户名
     int iIndex;                          //子设备号
     int iContentLength;                  //动作内容长度，单位Bytes
-    void *pContentData;                  //动作内容
+    void* pContentData;                  //动作内容
     int iReserved[2];
 } BVCU_Event_Action_Custom;
 
@@ -261,12 +262,12 @@ typedef struct _BVCU_Event_LinkAction
 
     //事件源设置
     int iSourceCount;           //事件源个数
-    BVCU_Event_Source *pSource; //多个Event源之间是“And”的关系
+    BVCU_Event_Source* pSource; //多个Event源之间是“And”的关系
     int iSourceInterval;        //单位毫秒。对Event同时发生，如果发生时间间隔小于iSourceInterval，则触发联动
 
     //触发动作
     int iActionCount;           //动作个数
-    BVCU_Event_Action *pAction; // Event触发动作
+    BVCU_Event_Action* pAction; // Event触发动作
 } BVCU_Event_LinkAction;
 
 //联动通知，用于通知CU/PU/NRU等
@@ -274,11 +275,11 @@ typedef struct _BVCU_Event_LinkAction_Notify
 {
     //事件源
     int iSourceCount;           //事件源个数
-    BVCU_Event_Source *pSource; //多个Event源之间是“And”的关系
+    BVCU_Event_Source* pSource; //多个Event源之间是“And”的关系
 
     //触发动作
     int iActionCount;           //动作个数，可以为0
-    BVCU_Event_Action *pAction; // Event触发动作
+    BVCU_Event_Action* pAction; // Event触发动作
 } BVCU_Event_LinkAction_Notify;
 
 #if 0
