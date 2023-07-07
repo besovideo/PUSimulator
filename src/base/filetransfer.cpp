@@ -1,4 +1,4 @@
-
+ï»¿
 #include <string>
 #include "../utils.h"
 #include "session.h"
@@ -15,7 +15,7 @@ CFileTransfer::CFileTransfer()
     , m_iFileSize(0)
     , m_iCompleTime(0)
     , m_iHandle(0)
-    , m_pSession(NULL)
+    , m_pOwn(NULL)
     , m_bClosing(0)
     , m_bCallOpen(0)
 {
@@ -23,16 +23,16 @@ CFileTransfer::CFileTransfer()
     m_localFilePathName[0] = '\0';
 }
 
-void CFileTransfer::Init(CFileTransManager* pSession)
+void CFileTransfer::Init(CFileTransManager* pOwn)
 {
     if (m_cspDialog)
     {
-        //BVCSP_Dialog_Close(m_cspDialog); // BVCU_Finsh()»áËÀËø¡£
+        //BVCSP_Dialog_Close(m_cspDialog); // BVCU_Finsh()ä¼šæ­»é”ã€‚
         m_cspDialog = NULL;
     }
     if (m_fFile)
     {
-        m_pSession->bv_fclose(m_fFile);
+        m_pOwn->bv_fclose(m_fFile);
         m_fFile = NULL;
     }
     m_iStatus = BVFILE_DIALOG_STATUS_NONE;
@@ -40,7 +40,7 @@ void CFileTransfer::Init(CFileTransManager* pSession)
     m_iCompleTime = 0;
     m_iLastDataTime = GetTickCount();
     m_iHandle = 0;
-    m_pSession = pSession;
+    m_pOwn = pOwn;
     m_bClosing = 0;
     m_bCallOpen = 0;
     m_localFilePathName[0] = '\0';
@@ -56,15 +56,15 @@ int CFileTransfer::SetInfo(BVCU_File_TransferParam* pParam)
     m_fileInfo.stParam.pLocalFilePathName = m_localFilePathName;
     if (m_fileInfo.stParam.iTimeOut <= 0)
         m_fileInfo.stParam.iTimeOut = 30 * 1000;
-    // ´ò¿ªÎÄ¼ş
+    // æ‰“å¼€æ–‡ä»¶
     Utf8ToAnsi(szLocalFileAnsi, sizeof(szLocalFileAnsi), m_localFilePathName);
     if (m_fileInfo.stParam.bUpload == 0)
-    { // ÏÂÔØÎÄ¼ş
-        m_fFile = m_pSession->bv_fsopen(szLocalFileAnsi, "ab+", 1);
+    { // ä¸‹è½½æ–‡ä»¶
+        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "ab+", 1);
         if (m_fFile)
-        { // ´¦ÀíĞø´«
-            m_pSession->bv_fseek(m_fFile, 0L, SEEK_END);
-            m_iFileSize = m_pSession->bv_ftell(m_fFile);
+        { // å¤„ç†ç»­ä¼ 
+            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
+            m_iFileSize = m_pOwn->bv_ftell(m_fFile);
             if (m_fileInfo.stParam.iFileStartOffset == -1) // == -1
             {
                 m_fileInfo.stParam.iFileStartOffset = m_iFileSize;
@@ -72,17 +72,21 @@ int CFileTransfer::SetInfo(BVCU_File_TransferParam* pParam)
             }
             else {
                 m_fileInfo.stParam.iFileStartOffset = 0;
-                m_pSession->bv_fseek(m_fFile, 0L, SEEK_SET);
+                if (m_iFileSize > 0) // é‡æ–°ä¼ è¾“ï¼Œåˆ é™¤è€æ–‡ä»¶
+                {
+                    fclose(m_fFile);
+                    m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "wb+", TRUE);// _SH_DENYRW);;
+                }
             }
         }
     }
     else
-    { // ÉÏ´«ÎÄ¼ş£¬»ñÈ¡ÎÄ¼ş´óĞ¡
-        m_fFile = m_pSession->bv_fsopen(szLocalFileAnsi, "rb", 0);
+    { // ä¸Šä¼ æ–‡ä»¶ï¼Œè·å–æ–‡ä»¶å¤§å°
+        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "rb", 0);
         if (m_fFile)
         {
-            m_pSession->bv_fseek(m_fFile, 0L, SEEK_END);
-            m_iFileSize = m_pSession->bv_ftell(m_fFile);
+            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
+            m_iFileSize = m_pOwn->bv_ftell(m_fFile);
             m_fileInfo.iTotalBytes = m_iFileSize;
         }
     }
@@ -131,6 +135,10 @@ BVCU_File_TransferInfo* CFileTransfer::GetInfoNow(int bNetworkThread)
                 m_fileInfo.iSpeedKBpsShortTerm = cspDialogInfo.iVideoKbpsShortTerm;
             }
         }
+        else
+        {
+            m_fileInfo.stParam.pRemoteFilePathName = NULL;
+        }
     }
     return &m_fileInfo;
 }
@@ -148,11 +156,11 @@ int CFileTransfer::HandleEvent(int iTickCount)
                 {
                     int isendcount = 0;
                     if (m_iCompleTime)
-                        iDely = (iDely * m_pSession->m_iSendDataCount) >> 10;
+                        iDely = (iDely * m_pOwn->m_iSendDataCount) >> 10;
                     else iDely = 1;
                     do {
                         char sendBuf[800];
-                        int iSendLen = m_pSession->bv_fread(sendBuf, 1, 800, m_fFile);
+                        int iSendLen = m_pOwn->bv_fread(sendBuf, 1, 800, m_fFile);
                         if (iSendLen > 0)
                         {
                             BVCSP_Packet bvcspPacket;
@@ -163,7 +171,7 @@ int CFileTransfer::HandleEvent(int iTickCount)
                             bvcspPacket.pData = sendBuf;
                             if (BVCU_Result_FAILED(BVCSP_Dialog_Write(m_cspDialog, &bvcspPacket)))
                             {
-                                m_pSession->bv_fseek(m_fFile, 0 - iSendLen, SEEK_CUR);
+                                m_pOwn->bv_fseek(m_fFile, 0 - iSendLen, SEEK_CUR);
                                 break;
                             }
                             else
@@ -194,7 +202,7 @@ int CFileTransfer::HandleEvent(int iTickCount)
     {
         if (m_iStatus == BVFILE_DIALOG_STATUS_TRANSFER && m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
         {
-            m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 10 * 1000);// ÑÓ³Ù10Ãë¹Ø±Õ
+            m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 10 * 1000);// å»¶è¿Ÿ10ç§’å…³é—­
             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
         }
     }
@@ -202,11 +210,11 @@ int CFileTransfer::HandleEvent(int iTickCount)
     {
         int iDely = iTickCount - m_iCompleTime;
         if (iDely < 0 || iDely > MODULE_FILE_TRANSFER_TIMEOUT)
-            return 0;  // ¹Ø±ÕÍ¨µÀ
+            return 0;  // å…³é—­é€šé“
     }
     else if (iTickCount - m_iLastDataTime > MODULE_FILE_TRANSFER_TIMEOUT)
-    { // 3·ÖÖÓÃ»ÓĞÊı¾İ·¢ËÍ/½ÓÊÕ£¬¹Ø±ÕÍ¨µÀ
-        m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000);// ÑÓ³Ù2Ãë¹Ø±Õ;
+    { // 3åˆ†é’Ÿæ²¡æœ‰æ•°æ®å‘é€/æ¥æ”¶ï¼Œå…³é—­é€šé“
+        m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000);// å»¶è¿Ÿ2ç§’å…³é—­;
         if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
         else
@@ -222,14 +230,14 @@ BVCU_Result CFileTransfer::OnRecvFrame(BVCSP_Packet* pPacket)
         m_iLastDataTime = GetTickCount();
         if (pPacket->iDataSize > 0)
         {
-            int iWriteLen = m_pSession->bv_fwrite(pPacket->pData, 1, pPacket->iDataSize, m_fFile);
+            int iWriteLen = m_pOwn->bv_fwrite(pPacket->pData, 1, pPacket->iDataSize, m_fFile);
             m_fileInfo.iTransferBytes += pPacket->iDataSize;
             if (iWriteLen >= pPacket->iDataSize)
                 return BVCU_RESULT_S_OK;
         }
-        else if (pPacket->iDataSize == 0)  // Êı¾İÒÑ¾­ºÍ·¢ËÍ·½È·ÈÏ´«ÊäÍê±Ï
+        else if (pPacket->iDataSize == 0)  // æ•°æ®å·²ç»å’Œå‘é€æ–¹ç¡®è®¤ä¼ è¾“å®Œæ¯•
         {
-            m_iCompleTime = GetTickCount() - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000);// ÑÓ³Ù2Ãë¹Ø±Õ
+            m_iCompleTime = GetTickCount() - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000);// å»¶è¿Ÿ2ç§’å…³é—­
             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
             return BVCU_RESULT_S_OK;
         }
@@ -243,32 +251,34 @@ void CFileTransfer::OnEvent(int iEvent, BVCU_Result iResult, int bOnbvcspEvent)
         (iEvent == BVCSP_EVENT_DIALOG_OPEN && BVCU_Result_FAILED(iResult)))
     {
         m_bClosing = 1;
-        if (m_cspDialog)
-            BVCSP_Dialog_Close(m_cspDialog);
-        m_cspDialog = NULL;
         if (m_fFile)
-            m_pSession->bv_fclose(m_fFile);
+            m_pOwn->bv_fclose(m_fFile);
         m_fFile = NULL;
     }
     else
         m_bCallOpen = 1;
-    if (m_fileInfo.stParam.OnEvent) {
-        if (iEvent == BVCSP_EVENT_DIALOG_CLOSE)
+
+    if (iEvent == BVCSP_EVENT_DIALOG_CLOSE)
+    {
+        if (!m_bCallOpen)
         {
-            if (!m_bCallOpen)
-            {
-                iEvent = BVCSP_EVENT_DIALOG_OPEN;
-                iResult = BVCU_RESULT_E_BADSTATE;
-            }
-            else if (BVCU_Result_SUCCEEDED(iResult))
-            { // ÎÄ¼şÃ»ÓĞ´«ÊäÍê³É£¬»ò¶Ô·½Ã»ÓĞ½ÓÊÕÍê³É
-                if (m_fileInfo.iTransferBytes != m_fileInfo.iTotalBytes)
-                    iResult = BVCU_RESULT_E_BADSTATE;
-                else if (bOnbvcspEvent == 0 && m_fileInfo.stParam.bUpload)  // ²»ÊÇ½ÓÊÕÕßÖ÷¶¯byeµÄ£¬ºÜ¿ÉÄÜÃ»ÓĞ½ÓÊÕÍê³É¡£
-                    iResult = BVCU_RESULT_S_IGNORE;
-            }
+            iEvent = BVCSP_EVENT_DIALOG_OPEN;
+            iResult = BVCU_RESULT_E_BADSTATE;
         }
-        m_fileInfo.stParam.OnEvent((BVCU_File_HTransfer)m_iHandle, m_fileInfo.stParam.pUserData, iEvent, iResult);
+        else if (BVCU_Result_SUCCEEDED(iResult))
+        { // æ–‡ä»¶æ²¡æœ‰ä¼ è¾“å®Œæˆï¼Œæˆ–å¯¹æ–¹æ²¡æœ‰æ¥æ”¶å®Œæˆ
+            if (m_fileInfo.iTransferBytes != m_fileInfo.iTotalBytes)
+                iResult = BVCU_RESULT_E_BADSTATE;
+            else if (bOnbvcspEvent == 0 && m_fileInfo.stParam.bUpload)  // è‡ªå·±ä¸»åŠ¨å…³é—­çš„ï¼Œæ¥æ”¶è€…æ²¡æœ‰å‘é€eofè¿‡æ¥ï¼Œå¤±è´¥ï¼ˆä¸å†å…¼å®¹2020å¹´5æœˆä¹‹å‰ç‰ˆæœ¬æœåŠ¡å™¨ï¼‰ã€‚
+                iResult = BVCU_RESULT_E_MAXRETRIES;
+        }
+    }
+    m_pOwn->OnFileEvent((BVCU_File_HTransfer)m_iHandle, m_fileInfo.stParam.pUserData, iEvent, iResult);
+    if (m_bClosing == TRUE)
+    {
+        if (m_cspDialog)  // onevent ä¹‹åæ‰èƒ½å…³é—­ï¼Œä¸ç„¶ pRemoteFilePathName æ— æ•ˆã€‚
+            BVCSP_Dialog_Close(m_cspDialog);
+        m_cspDialog = NULL;
     }
 }
 
@@ -286,50 +296,54 @@ BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
     Utf8ToAnsi(szLocalFileAnsi, sizeof(szLocalFileAnsi), m_localFilePathName);
     m_fileInfo.stParam.pLocalFilePathName = m_localFilePathName;
     if (m_fileInfo.stParam.bUpload)
-    {  // ÏÂÔØÇëÇó
-        m_fFile = m_pSession->bv_fsopen(szLocalFileAnsi, "rb", 0);
+    {  // ä¸‹è½½è¯·æ±‚
+        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "rb", 0);
         if (!m_fFile)
         {
             printf("fopen file=%s error\n", szLocalFileAnsi);
             return BVCU_RESULT_E_NOTFOUND;
         }
 
-        m_pSession->bv_fseek(m_fFile, 0L, SEEK_END);
-        m_iFileSize = m_pSession->bv_ftell(m_fFile);
+        m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
+        m_iFileSize = m_pOwn->bv_ftell(m_fFile);
         if (m_fileInfo.stParam.iFileStartOffset != -1)
         {
             if (m_fileInfo.stParam.iFileStartOffset > m_iFileSize)
                 return BVCU_RESULT_E_BADREQUEST;
-            m_pSession->bv_fseek(m_fFile, m_fileInfo.stParam.iFileStartOffset, SEEK_SET);
+            m_pOwn->bv_fseek(m_fFile, m_fileInfo.stParam.iFileStartOffset, SEEK_SET);
         }
         else {
             m_fileInfo.stParam.iFileStartOffset = 0;
-            m_pSession->bv_fseek(m_fFile, 0L, SEEK_SET);
+            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_SET);
         }
     }
     else
-    { // ÉÏ´«ÇëÇó
-        m_fFile = m_pSession->bv_fsopen(szLocalFileAnsi, "ab+", 1);// _SH_DENYRW);;
+    { // ä¸Šä¼ è¯·æ±‚
+        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "ab+", 1);// _SH_DENYRW);;
         if (m_fFile)
-        { // ´¦ÀíĞø´«
-            m_pSession->bv_fseek(m_fFile, 0L, SEEK_END);
-            m_iFileSize = m_pSession->bv_ftell(m_fFile);
-            if (m_fileInfo.stParam.iFileStartOffset == -1)
+        { // å¤„ç†ç»­ä¼ 
+            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
+            m_iFileSize = m_pOwn->bv_ftell(m_fFile);
+            if (m_fileInfo.stParam.iFileStartOffset == -1) // ç»­ä¼ 
                 m_fileInfo.stParam.iFileStartOffset = m_iFileSize;
             else {
                 m_fileInfo.stParam.iFileStartOffset = 0;
-                m_pSession->bv_fseek(m_fFile, 0L, SEEK_SET);
+                if (m_iFileSize > 0) // é‡æ–°ä¼ è¾“ï¼Œåˆ é™¤è€æ–‡ä»¶
+                {
+                    fclose(m_fFile);
+                    m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "wb+", TRUE);// _SH_DENYRW);;
+                }
             }
         }
         if (!m_fFile)
         {
             if (m_fileInfo.stParam.iFileStartOffset == -1)
-            {// Èç¹ûÊÇĞø´«¡£ÅĞ¶ÏÊÇ·ñÕıÔÚ±»ÏÂÔØ£¬ÊÇ·ñÒÑ¾­ÉÏ´«Íê³É¡£
-                m_fFile = m_pSession->bv_fsopen(szLocalFileAnsi, "rb", 0);
+            {// å¦‚æœæ˜¯ç»­ä¼ ã€‚åˆ¤æ–­æ˜¯å¦æ­£åœ¨è¢«ä¸‹è½½ï¼Œæ˜¯å¦å·²ç»ä¸Šä¼ å®Œæˆã€‚
+                m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "rb", 0);
                 if (!m_fFile)
                     return BVCU_RESULT_E_BUSY;
-                m_pSession->bv_fseek(m_fFile, 0L, SEEK_END);
-                m_fileInfo.stParam.iFileStartOffset = m_pSession->bv_ftell(m_fFile);
+                m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
+                m_fileInfo.stParam.iFileStartOffset = m_pOwn->bv_ftell(m_fFile);
                 if (m_fileInfo.stParam.iFileStartOffset < pParam->stFileTarget.iEndTime_iFileSize)
                     return BVCU_RESULT_E_BUSY;
             }
@@ -338,11 +352,11 @@ BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
         }
         m_iFileSize = pParam->stFileTarget.iEndTime_iFileSize;
         if (m_fileInfo.stParam.iFileStartOffset > m_iFileSize)
-            return BVCU_RESULT_E_MAXRETRIES; // Ğø´«ÇëÇó£¬ÇÒ±¾µØÎÄ¼ş´óĞ¡´óÔ¼Òª´«ÊäµÄÎÄ¼ş´óĞ¡¡£
+            return BVCU_RESULT_E_MAXRETRIES; // ç»­ä¼ è¯·æ±‚ï¼Œä¸”æœ¬åœ°æ–‡ä»¶å¤§å°å¤§çº¦è¦ä¼ è¾“çš„æ–‡ä»¶å¤§å°ã€‚
     }
     m_fileInfo.iTransferBytes = m_fileInfo.stParam.iFileStartOffset;
     m_fileInfo.iTotalBytes = m_iFileSize;
-    // ÉèÖÃ»Ø¸´²ÎÊı
+    // è®¾ç½®å›å¤å‚æ•°
     pParam->stFileTarget.iEndTime_iFileSize = m_iFileSize;
     pParam->stFileTarget.iStartTime_iOffset = m_fileInfo.stParam.iFileStartOffset;
     pParam->afterRecv = CFileTransManager::OnAfterRecv_BVCSP;
@@ -352,7 +366,7 @@ BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
     if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
     {
         if (m_fFile)
-            m_pSession->bv_fclose(m_fFile);
+            m_pOwn->bv_fclose(m_fFile);
         m_fFile = NULL;
     }
     m_iLastDataTime = GetTickCount();
@@ -361,7 +375,7 @@ BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
 
 int CFileTransfer::BuildFileData()
 {
-    // ¸üĞÂµ±Ç° Ã½Ìå·½Ïò¡¢±àÂë²ÎÊı¡¢µÈĞÅÏ¢
+    // æ›´æ–°å½“å‰ åª’ä½“æ–¹å‘ã€ç¼–ç å‚æ•°ã€ç­‰ä¿¡æ¯
     BVCSP_DialogInfo cspDialogInfo;
     BVCU_Result iResult2 = BVCSP_GetDialogInfo(m_cspDialog, &cspDialogInfo);
     if (BVCU_Result_SUCCEEDED(iResult2))
@@ -376,17 +390,17 @@ int CFileTransfer::BuildFileData()
         if (m_fileInfo.stParam.bUpload == 0)
             m_iFileSize = cspDialogInfo.stParam.stFileTarget.iEndTime_iFileSize;
         m_fileInfo.iTotalBytes = m_iFileSize;
-        if (!m_fileInfo.stParam.szTargetID[0] || strchr(m_fileInfo.stParam.szTargetID, '_')) // ±»¶¯µÄÓÃ»§ID²»ÄÜÌæ»»µô
+        if (!m_fileInfo.stParam.szTargetID[0] || strchr(m_fileInfo.stParam.szTargetID, '_')) // è¢«åŠ¨çš„ç”¨æˆ·IDä¸èƒ½æ›¿æ¢æ‰
             strncpy_s(m_fileInfo.stParam.szTargetID, sizeof(m_fileInfo.stParam.szTargetID), cspDialogInfo.stParam.stTarget.szID, _TRUNCATE);
         if (m_fFile)
         {
             if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
             {
-                m_pSession->bv_fclose(m_fFile);
+                m_pOwn->bv_fclose(m_fFile);
                 m_fFile = NULL;
             }
             else
-                m_pSession->bv_fseek(m_fFile, m_fileInfo.iTransferBytes, SEEK_SET);
+                m_pOwn->bv_fseek(m_fFile, m_fileInfo.iTransferBytes, SEEK_SET);
         }
         m_iStatus = BVFILE_DIALOG_STATUS_TRANSFER;
         m_iLastDataTime = GetTickCount();
@@ -442,11 +456,11 @@ void CFileTransManager::OnDialogEvent_BVCSP(BVCSP_HDialog hDialog, int iEventCod
     CFileTransManager* pManager = pSession->GetFileManager();
     if (pManager == 0)
         return;
-    CFileTransfer* pFileTransfer = pManager->FindFileTransfer(hDialog);
+    CFileTransfer* pFileTransfer = pManager->FindFileTransferByDlg(hDialog);
     if (pFileTransfer && !pFileTransfer->bClosing())
     {
-        printf("OnFileEvent:%X eventCode:%d result:%d \n",
-             pFileTransfer->GetHandle(), iEventCode, pParam->iResult);
+        printf("OnFileEvent:%d eventCode:%d result:%d \n",
+            pFileTransfer->GetHandle(), iEventCode, pParam->iResult);
         if (iEventCode != BVCSP_EVENT_DIALOG_CLOSE && BVCU_Result_SUCCEEDED(pParam->iResult))
             pFileTransfer->BuildFileData();
         pFileTransfer->OnEvent(iEventCode, pParam->iResult, 1);
@@ -466,7 +480,7 @@ BVCU_Result CFileTransManager::OnAfterRecv_BVCSP(BVCSP_HDialog hDialog, BVCSP_Pa
     CFileTransManager* pManager = pSession->GetFileManager();
     if (pManager == 0)
         return BVCU_RESULT_E_BADREQUEST;
-    CFileTransfer* pFileTransfer = pManager->FindFileTransfer(hDialog);
+    CFileTransfer* pFileTransfer = pManager->FindFileTransferByDlg(hDialog);
     if (pFileTransfer && !pFileTransfer->bClosing())
     {
         return pFileTransfer->OnRecvFrame(pPacket);
@@ -476,13 +490,13 @@ BVCU_Result CFileTransManager::OnAfterRecv_BVCSP(BVCSP_HDialog hDialog, BVCSP_Pa
 
 CFileTransManager::CFileTransManager()
 {
-    m_iSendDataCount = 5120; // 4000 KBps
-    m_iBandwidthLimit = 100*1024;  // 100 Mbps
+    m_iSendDataCount = 51200; // 40000 KBps
+    m_iBandwidthLimit = 100 * 1024;  // 100 Mbps
     memset(m_fileList, 0x00, sizeof(m_fileList));
 }
 CFileTransManager::~CFileTransManager()
 {
-    for (int i = 0; i < MAX_FILE_TRANSFER_COUNT; ++ i)
+    for (int i = 0; i < MAX_FILE_TRANSFER_COUNT; ++i)
     {
         if (m_fileList[i])
         {
@@ -521,10 +535,10 @@ CFileTransfer* CFileTransManager::AddFileTransfer()
             return 0;
         m_fileList[index] = pFileTransfer;
         pFileTransfer->Init(this);
-        pFileTransfer->SetHandle(index+1);
+        pFileTransfer->SetHandle(index + 1);
 
         if (m_iBandwidthLimit > 0)
-        {  // ÎÄ¼ş´«Êä´ø¿íÏŞÖÆ£¬¼ÆËãÃ¿Â·´ø¿í
+        {  // æ–‡ä»¶ä¼ è¾“å¸¦å®½é™åˆ¶ï¼Œè®¡ç®—æ¯è·¯å¸¦å®½
             int iCount = GetFileTransferCount();
             m_iSendDataCount = (m_iBandwidthLimit << 2) / (25 * iCount); // kbps*1024/8/800/count
         }
@@ -548,20 +562,31 @@ int CFileTransManager::RemoveFileTransfer(CFileTransfer* pFileTransfer)
         pFileTransfer->Init(NULL);
         delete pFileTransfer;
 
-        if (m_iBandwidthLimit > 0)
-        {  // ÎÄ¼ş´«Êä´ø¿íÏŞÖÆ£¬¼ÆËãÃ¿Â·´ø¿í
-            int iCount = GetFileTransferCount();
+        int iCount = GetFileTransferCount();
+        if (m_iBandwidthLimit > 0 && iCount > 0)
+        {  // æ–‡ä»¶ä¼ è¾“å¸¦å®½é™åˆ¶ï¼Œè®¡ç®—æ¯è·¯å¸¦å®½
             m_iSendDataCount = (m_iBandwidthLimit << 2) / (25 * iCount); // kbps*1024/8/800/count
         }
         return 1;
     }
     return 0;
 }
-CFileTransfer* CFileTransManager::FindFileTransfer(BVCSP_HDialog hdialog)
+CFileTransfer* CFileTransManager::FindFileTransferByDlg(BVCSP_HDialog hdialog)
 {
     for (int i = 0; i < MAX_FILE_TRANSFER_COUNT; ++i)
     {
         if (m_fileList[i] && m_fileList[i]->GetCSPDialog() == hdialog)
+        {
+            return m_fileList[i];
+        }
+    }
+    return 0;
+}
+CFileTransfer* CFileTransManager::FindFileTransfer(BVCU_File_HTransfer hfile)
+{
+    for (int i = 0; i < MAX_FILE_TRANSFER_COUNT; ++i)
+    {
+        if (m_fileList[i] && (BVCU_File_HTransfer)m_fileList[i]->GetHandle() == hfile)
         {
             return m_fileList[i];
         }

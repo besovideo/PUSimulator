@@ -6,4 +6,5 @@ int Login(bool autoOption);    // 登录。 loginout.cpp
 int Logout();        // 退出。 loginout.cpp
 int SendAlarm();     // 发送报警，测试。
 int SendCommand();
-void HandleEvent();  // 处理事件。 loginout.cpp
+int HandleEvent();  // 处理事件。 loginout.cpp
+void UploadFile(); // 上传文件测试。

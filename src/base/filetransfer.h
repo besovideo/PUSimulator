@@ -1,7 +1,8 @@
-#pragma once
+ï»¿#pragma once
+#include <stdio.h>
 #include "BVCSP.h"
 
-#define MAX_FILE_TRANSFER_COUNT 64
+#define MAX_FILE_TRANSFER_COUNT 512
 #define MODULE_FILE_TRANSFER_TIMEOUT (2*60*1000)
 
 typedef  void* BVCU_File_HTransfer;
@@ -10,35 +11,38 @@ typedef struct _BVCU_File_TransferParam BVCU_File_TransferParam;
 class CFileTransManager
 {
 public:
-    // ÉÏ²ãÊµÏÖÎÄ¼ş´ò¿ª/¹Ø±Õ/¶ÁĞ´ µÈÏà¹Ø½Ó¿Ú
+    // ä¸Šå±‚å®ç°æ–‡ä»¶æ‰“å¼€/å…³é—­/è¯»å†™ ç­‰ç›¸å…³æ¥å£
     virtual FILE* bv_fsopen(const char* pathName, const char* mode, int bWrite) = 0;
-    virtual FILE* bv_fclose(FILE* _File) = 0;
+    virtual int bv_fclose(FILE* _File) = 0;
     virtual int bv_fread(void* _DstBuf, int _ElementSize, int _Count, FILE* _File) = 0;
     virtual int bv_fwrite(const void* _Str, int _Size, int _Count, FILE* _File) = 0;
     virtual int bv_fseek(FILE* _File, long _Offset, int _Origin) = 0;
     virtual long bv_ftell(FILE* _File) = 0;
 
-    /* ÊÕµ½ÎÄ¼ş´«ÊäÇëÇó»Øµ÷
-    hTransfer£ºÎÄ¼ş´«ÊäµÄ¾ä±ú¡£
-    pParam: Ã¿¸öÊÂ¼ş¶ÔÓ¦µÄ²ÎÊı£¬¾ßÌåÀàĞÍ²Î¿¼¸÷¸öÊÂ¼şÂëµÄËµÃ÷¡£Èç¹ûpParamÊÇNULL£¬±íÊ¾ÎŞ²ÎÊı¡£
-    ·µ»Ø£ºBVCU_RESULT_S_OK±íÊ¾Ó¦ÓÃ³ÌĞò½ÓÊÜ¸Ã´«ÊäÇëÇó£¬ÆäËûÖµ±íÊ¾¾Ü¾ø¡£Í¬ÇéÇëÇóÊ±×¢ÒâÌîĞ´pParamÖĞĞèÒªÌîĞ´µÄÖµ¡£
+    /* æ”¶åˆ°æ–‡ä»¶ä¼ è¾“è¯·æ±‚å›è°ƒ
+    hTransferï¼šæ–‡ä»¶ä¼ è¾“çš„å¥æŸ„ã€‚
+    pParam: æ¯ä¸ªäº‹ä»¶å¯¹åº”çš„å‚æ•°ï¼Œå…·ä½“ç±»å‹å‚è€ƒå„ä¸ªäº‹ä»¶ç çš„è¯´æ˜ã€‚å¦‚æœpParamæ˜¯NULLï¼Œè¡¨ç¤ºæ— å‚æ•°ã€‚
+    è¿”å›ï¼šBVCU_RESULT_S_OKè¡¨ç¤ºåº”ç”¨ç¨‹åºæ¥å—è¯¥ä¼ è¾“è¯·æ±‚ï¼Œå…¶ä»–å€¼è¡¨ç¤ºæ‹’ç»ã€‚åŒæƒ…è¯·æ±‚æ—¶æ³¨æ„å¡«å†™pParamä¸­éœ€è¦å¡«å†™çš„å€¼ã€‚
     */
     virtual BVCU_Result OnFileRequest(BVCU_File_HTransfer hTransfer, BVCU_File_TransferParam* pParam) = 0;
+    virtual void  OnFileEvent(BVCU_File_HTransfer hTransfer, void* pUserData, int iEventCode, BVCU_Result iResult) = 0;
 
-    void SetBandwidthLimit(int iBandwidthLimit) { m_iBandwidthLimit = iBandwidthLimit; } // ´ø¿íÏŞÖÆ¡£µ¥Î»kbps£¬0±íÊ¾ÎŞÏŞÖÆ£¬½¨ÒéÏŞÖÆÎÄ¼ş´«ÊäµÄ´ø¿í¡£
+    void SetBandwidthLimit(int iBandwidthLimit) { m_iBandwidthLimit = iBandwidthLimit; } // å¸¦å®½é™åˆ¶ã€‚å•ä½kbpsï¼Œ0è¡¨ç¤ºæ— é™åˆ¶ï¼Œå»ºè®®é™åˆ¶æ–‡ä»¶ä¼ è¾“çš„å¸¦å®½ã€‚
 public:
     CFileTransManager();
-    ~CFileTransManager();
+    virtual ~CFileTransManager();
     CFileTransfer** GetFileTransferList() { return m_fileList; }
     int IsFileTransferInList(CFileTransfer* pFileTransfer);
     CFileTransfer* AddFileTransfer();
     int RemoveFileTransfer(CFileTransfer* pFileTransfer);
-    CFileTransfer* FindFileTransfer(BVCSP_HDialog hdialog);
+    CFileTransfer* FindFileTransferByDlg(BVCSP_HDialog hdialog);
+    CFileTransfer* FindFileTransfer(BVCU_File_HTransfer hfile);
+
     int GetFileTransferCount();
 
     int HandleEvent();
 
-    int m_iSendDataCount; // È«¾ÖÏŞËÙ¡£1024pms ; (800*m_iSendDataCount) Bps
+    int m_iSendDataCount; // å…¨å±€é™é€Ÿã€‚1024pms ; (800*m_iSendDataCount) Bps
 public:
     // BVCSP Event
     BVCU_Result OnDialogCmd_BVCSP(BVCSP_HDialog hDialog, int iEventCode, BVCSP_DialogParam* pParam);
@@ -46,56 +50,48 @@ public:
     static BVCU_Result OnAfterRecv_BVCSP(BVCSP_HDialog hDialog, BVCSP_Packet* pPacket);
 private:
     CFileTransfer* m_fileList[MAX_FILE_TRANSFER_COUNT];
-    int m_iBandwidthLimit;// ´ø¿íÏŞÖÆ¡£µ¥Î»kbps£¬0±íÊ¾ÎŞÏŞÖÆ£¬½¨ÒéÏŞÖÆÎÄ¼ş´«ÊäµÄ´ø¿í¡£
+    int m_iBandwidthLimit;// å¸¦å®½é™åˆ¶ã€‚å•ä½kbpsï¼Œ0è¡¨ç¤ºæ— é™åˆ¶ï¼Œå»ºè®®é™åˆ¶æ–‡ä»¶ä¼ è¾“çš„å¸¦å®½ã€‚
 };
 
 enum BVFile_Dialog_Status
 {
-    BVFILE_DIALOG_STATUS_NONE = 0, // Ã»ÓĞ×´Ì¬
-    BVFILE_DIALOG_STATUS_INVITING, // ÔÚ½¨Á¢Á´½ÓÖĞ
-    BVFILE_DIALOG_STATUS_TRANSFER, // ÔÚ´«ÊäÖĞ
-    BVFILE_DIALOG_STATUS_SUCCEEDED,// ´«Êä³É¹¦
-    BVFILE_DIALOG_STATUS_FAILED,   // ´«ÊäÊ§°Ü
+    BVFILE_DIALOG_STATUS_NONE = 0, // æ²¡æœ‰çŠ¶æ€
+    BVFILE_DIALOG_STATUS_INVITING, // åœ¨å»ºç«‹é“¾æ¥ä¸­
+    BVFILE_DIALOG_STATUS_TRANSFER, // åœ¨ä¼ è¾“ä¸­
+    BVFILE_DIALOG_STATUS_SUCCEEDED,// ä¼ è¾“æˆåŠŸ
+    BVFILE_DIALOG_STATUS_FAILED,   // ä¼ è¾“å¤±è´¥
 };
-// ÎÄ¼ş´«Êä²ÎÊıÉèÖÃ¡£ÊÕµ½´«ÊäÇëÇó²¢Í¬ÒâÊ±£ºszLocalFileName£¬OnEventĞèÒªÌîĞ´¡£
+// æ–‡ä»¶ä¼ è¾“å‚æ•°è®¾ç½®ã€‚æ”¶åˆ°ä¼ è¾“è¯·æ±‚å¹¶åŒæ„æ—¶ï¼šszLocalFileNameï¼ŒOnEventéœ€è¦å¡«å†™ã€‚
 typedef struct _BVCU_File_TransferParam {
-    int iSize; // ±¾½á¹¹ÌåµÄ´óĞ¡£¬·ÖÅäÕßÓ¦³õÊ¼»¯Îªsizeof(BVCU_File_TransferParam)
-    void* pUserData;          // ÓÃ»§×Ô¶¨ÒåÊı¾İ¡£BVCU_File_GlobalParam.OnFileRequestÖĞ¿ÉÒÔÌîĞ´¡£
-    char  szTargetID[BVCU_MAX_ID_LEN + 1]; // ÎÄ¼ş´«ÊäÄ¿±ê¶ÔÏóID¡£PU/NRU¡£"NRU_"Ê±¿âÄÚ²¿»áÔÚ»Øµ÷Ç°ÌîĞ´¾ßÌåNRU ID¡£
-    char* pRemoteFilePathName;// Ô¶¶ËÂ·¾¶+ÎÄ¼şÃû¡£
-    char* pLocalFilePathName; // ±¾µØÂ·¾¶+ÎÄ¼şÃû¡£BVCU_File_GlobalParam.OnFileRequestÖĞÒªÌîĞ´¡£
-    unsigned int iFileStartOffset;     // ÎÄ¼ş¿ªÊ¼´«ÊäÆ«ÒÆ¡£0£ºÖØĞÂ´«Êä¡£-1(0xffffffff)£º¿âÄÚ×Ô¶¯´¦ÀíĞø´«¡£
-    int iTimeOut;             // Á¬½Ó³¬Ê±¼ä¡£µ¥Î» ºÁÃë¡£
-    int bUpload;              // 0-ÏÂÔØ£¬1-ÉÏ´«¡£
-
-    /* ÎÄ¼ş´«Êä¾ä±úÊÂ¼ş»Øµ÷º¯Êı¡£ BVCU_File_GlobalParam.OnFileRequestÖĞÒªÌîĞ´¡£
-    hTransfer:´«Êä¾ä±ú¡£
-    pUserData£º±¾½á¹¹ÌåÖĞµÄpUserData¡£
-    iEventCode: ÊÂ¼şÂë£¬²Î¼ûBVCU_EVENT_DIALOG_*¡£Open/Close¡£
-    iResult: ÊÂ¼ş¶ÔÓ¦µÄ½á¹ûÂë¡£
-    */
-    void(*OnEvent)(BVCU_File_HTransfer hTransfer, void* pUserData, int iEventCode, BVCU_Result iResult);
-
+    int iSize; // æœ¬ç»“æ„ä½“çš„å¤§å°ï¼Œåˆ†é…è€…åº”åˆå§‹åŒ–ä¸ºsizeof(BVCU_File_TransferParam)
+    void* pUserData;          // ç”¨æˆ·è‡ªå®šä¹‰æ•°æ®ã€‚BVCU_File_GlobalParam.OnFileRequestä¸­å¯ä»¥å¡«å†™ã€‚
+    char  szTargetID[BVCU_MAX_ID_LEN + 1]; // æ–‡ä»¶ä¼ è¾“ç›®æ ‡å¯¹è±¡IDã€‚PU/NRUã€‚"NRU_"æ—¶åº“å†…éƒ¨ä¼šåœ¨å›è°ƒå‰å¡«å†™å…·ä½“NRU IDã€‚
+    char* pRemoteFilePathName;// è¿œç«¯è·¯å¾„+æ–‡ä»¶åã€‚
+    char* pLocalFilePathName; // æœ¬åœ°è·¯å¾„+æ–‡ä»¶åã€‚BVCU_File_GlobalParam.OnFileRequestä¸­è¦å¡«å†™ã€‚
+    char* pFileInfoJson;      // ç›®æ ‡æ–‡ä»¶ä¿¡æ¯æè¿°ï¼Œbase64(jsonå­—ç¬¦ä¸²)ã€‚è§ï¼šhttps://mdwiki.smarteye.com/zh/smarteye/filename-format
+    unsigned int iFileStartOffset;     // æ–‡ä»¶å¼€å§‹ä¼ è¾“åç§»ã€‚0ï¼šé‡æ–°ä¼ è¾“ã€‚-1(0xffffffff)ï¼šåº“å†…è‡ªåŠ¨å¤„ç†ç»­ä¼ ã€‚
+    int iTimeOut;             // è¿æ¥è¶…æ—¶é—´ã€‚å•ä½ æ¯«ç§’ã€‚
+    int bUpload;              // 0-ä¸‹è½½ï¼Œ1-ä¸Šä¼ ã€‚
 }BVCU_File_TransferParam;
 
-// ÎÄ¼ş´«ÊäĞÅÏ¢
+// æ–‡ä»¶ä¼ è¾“ä¿¡æ¯
 typedef struct _BVCU_File_TransferInfo {
-    // ´«Êä²ÎÊı
+    // ä¼ è¾“å‚æ•°
     BVCU_File_TransferParam stParam;
 
-    // Transfer¿ªÊ¼Ê±¿Ì£¬´Ó1970-01-01 00:00:00 +0000 (UTC)¿ªÊ¼µÄÎ¢ÃëÊı
+    // Transferå¼€å§‹æ—¶åˆ»ï¼Œä»1970-01-01 00:00:00 +0000 (UTC)å¼€å§‹çš„å¾®ç§’æ•°
     long long iCreateTime;
 
-    // Transfer³ÖĞøÊ±¼ä£¬µ¥Î»Î¢Ãë
+    // TransferæŒç»­æ—¶é—´ï¼Œå•ä½å¾®ç§’
     long long iOnlineTime;
 
-    // ÒÑ¾­´«ÊäµÄ×Ö½ÚÊı£¬°üº¬BVCU_File_TransferParam.iFileStartOffset¡£ºÍiTotalBytesÒ»Æğ¼ÆËã³öµ±Ç°´«Êä½ø¶È¡£
+    // å·²ç»ä¼ è¾“çš„å­—èŠ‚æ•°ï¼ŒåŒ…å«BVCU_File_TransferParam.iFileStartOffsetã€‚å’ŒiTotalBytesä¸€èµ·è®¡ç®—å‡ºå½“å‰ä¼ è¾“è¿›åº¦ã€‚
     unsigned int iTransferBytes;
-    // ×Ü×Ö½ÚÊı
+    // æ€»å­—èŠ‚æ•°
     unsigned int iTotalBytes;
 
-    int iSpeedKBpsLongTerm;// ³¤Ê±¼ä´«ÊäËÙÂÊ£¬µ¥Î» KBytes/second
-    int iSpeedKBpsShortTerm;// ¶ÌÊ±¼ä´«ÊäËÙÂÊ£¬µ¥Î» KBytes/second
+    int iSpeedKBpsLongTerm;// é•¿æ—¶é—´ä¼ è¾“é€Ÿç‡ï¼Œå•ä½ KBytes/second
+    int iSpeedKBpsShortTerm;// çŸ­æ—¶é—´ä¼ è¾“é€Ÿç‡ï¼Œå•ä½ KBytes/second
 
 }BVCU_File_TransferInfo;
 
@@ -108,21 +104,21 @@ protected:
     BVFile_Dialog_Status m_iStatus;
     FILE* m_fFile;
     unsigned int m_iFileSize;
-    int   m_iLastDataTime; // ×îºó³É¹¦·¢ËÍ/½ÓÊÕÊı¾İÊ±¼ä¡£¼¸·ÖÖÓÎŞ·¨·¢ËÍ/½ÓÊÕÊı¾İ£¬¹Ø±ÕÍ¨µÀ¡£
-    int   m_iCompleTime; // Íê³É´«ÊäÊ±¼ä£¬ÓÃÀ´ÅĞ¶ÏÍ¨µÀ³¬Ê±¡£´«Êä¹ı³ÌÖĞÓÃÀ´¿ØÖÆËÙÂÊ¡£
+    int   m_iLastDataTime; // æœ€åæˆåŠŸå‘é€/æ¥æ”¶æ•°æ®æ—¶é—´ã€‚å‡ åˆ†é’Ÿæ— æ³•å‘é€/æ¥æ”¶æ•°æ®ï¼Œå…³é—­é€šé“ã€‚
+    int   m_iCompleTime; // å®Œæˆä¼ è¾“æ—¶é—´ï¼Œç”¨æ¥åˆ¤æ–­é€šé“è¶…æ—¶ã€‚ä¼ è¾“è¿‡ç¨‹ä¸­ç”¨æ¥æ§åˆ¶é€Ÿç‡ã€‚
     char  m_localFilePathName[BVCU_MAX_FILE_NAME_LEN + 1];
     unsigned long m_iHandle;
-    CFileTransManager* m_pSession;
+    CFileTransManager* m_pOwn;
     unsigned short m_bClosing;
     unsigned short m_bCallOpen;
 public:
     CFileTransfer();
     ~CFileTransfer() { Init(NULL); }
-    void Init(CFileTransManager* pSession);
-    CFileTransManager* GetSession() { return m_pSession; }
+    void Init(CFileTransManager* pOwn);
+    CFileTransManager* GetOwn() { return m_pOwn; }
     int bClosing() { return m_bClosing; }
-    int SetInfo(BVCU_File_TransferParam* pParam); // Ö÷¶¯
-    int SetInfo_RecvReq(BVCSP_DialogParam* pParam); // ±»¶¯
+    int SetInfo(BVCU_File_TransferParam* pParam); // ä¸»åŠ¨
+    int SetInfo_RecvReq(BVCSP_DialogParam* pParam); // è¢«åŠ¨
     BVCU_File_TransferInfo* GetInfo() { return &m_fileInfo; }
     BVCU_File_TransferParam* GetParam() { return &m_fileInfo.stParam; }
     BVCU_File_TransferInfo* GetInfoNow(int bNetworkThread);
@@ -134,12 +130,12 @@ public:
     void SetCSPDialog(BVCSP_HDialog hDialog) { m_cspDialog = hDialog; }
     BVCSP_HDialog GetCSPDialog() { return m_cspDialog; }
 
-    int HandleEvent(int iTickCount); // true:keep£¬false:destroy
+    int HandleEvent(int iTickCount); // true:keepï¼Œfalse:destroy
 
     BVCU_Result OnRecvFrame(BVCSP_Packet* pPacket);
     void OnEvent(int iEvent, BVCU_Result iResult, int bOnbvcspEvent = 0);
 
-    BVCU_Result UpdateLocalFile(BVCSP_DialogParam* pParam);  // ±»¶¯
+    BVCU_Result UpdateLocalFile(BVCSP_DialogParam* pParam);  // è¢«åŠ¨
     int BuildFileData();
 };
 

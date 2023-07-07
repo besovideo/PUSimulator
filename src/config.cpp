@@ -1,4 +1,4 @@
-#include <string>
+﻿#include <string>
 #include "config.h"
 
 #ifdef _MSC_VER
@@ -9,6 +9,10 @@
 void LoadConfig(PUConfig* pConfig)
 {
     char tempbuf[64];
+    pConfig->bUA = 0;
+    GetPrivateProfileStringA("info", "ua", "false", tempbuf, sizeof(tempbuf), CONFIG_FILE_PATH_NAME);
+    if (strcmpi(tempbuf, "true") == 0)
+        pConfig->bUA = 1;
     GetPrivateProfileStringA("info", "id", DEFAULT_ID, pConfig->ID, sizeof(pConfig->ID), CONFIG_FILE_PATH_NAME);
     if (pConfig->ID[0] == 0)
         strncpy_s(pConfig->ID, DEFAULT_ID, _TRUNCATE);
@@ -31,10 +35,10 @@ void LoadConfig(PUConfig* pConfig)
     if (0 >= pConfig->serverPort || pConfig->serverPort >= 65535)
         pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = GetPrivateProfileIntA("server", "type", DEFAULT_PROTOTYPE, CONFIG_FILE_PATH_NAME);
-    pConfig->relogin= GetPrivateProfileIntA("server", "relogin", 0, CONFIG_FILE_PATH_NAME);
+    pConfig->relogin = GetPrivateProfileIntA("server", "relogin", 0, CONFIG_FILE_PATH_NAME);
     // gps
     pConfig->interval = GetPrivateProfileIntA("gps", "interval", DEFAULT_GPS_INTERVAL, CONFIG_FILE_PATH_NAME);
-    if (0 >= pConfig->interval || pConfig->interval >= 60*60)
+    if (0 >= pConfig->interval || pConfig->interval >= 60 * 60)
         pConfig->interval = DEFAULT_GPS_INTERVAL;
     GetPrivateProfileStringA("gps", "name", "GPS", pConfig->gpsName, sizeof(pConfig->gpsName), CONFIG_FILE_PATH_NAME);
     GetPrivateProfileStringA("media", "name", "", pConfig->mediaName, sizeof(pConfig->mediaName), CONFIG_FILE_PATH_NAME);
@@ -44,6 +48,10 @@ void LoadConfig(PUConfig* pConfig)
     pConfig->PUCount = GetPrivateProfileIntA("info", "count", 1, CONFIG_FILE_PATH_NAME);
     if (pConfig->PUCount <= 0 || pConfig->PUCount > 1024)
         pConfig->PUCount = 1;
+    pConfig->Concurrency = GetPrivateProfileIntA("info", "concurrency", 1, CONFIG_FILE_PATH_NAME);
+    if (pConfig->Concurrency <= 0 || pConfig->Concurrency > 1024)
+        pConfig->Concurrency = 100;
+    pConfig->bandwidth = GetPrivateProfileIntA("file", "bandwidth", 1, CONFIG_FILE_PATH_NAME);
 }
 
 int SetConfig(const PUConfig* pConfig)
@@ -73,6 +81,7 @@ int SetConfig(const PUConfig* pConfig)
 void LoadConfig(PUConfig* pConfig)
 {
     pConfig->PUCount = 1;
+    pConfig->Concurrency = 100;
     strncpy_s(pConfig->ID, DEFAULT_ID);
     strncpy_s(pConfig->Name, DEFAULT_NAME);
     strncpy_s(pConfig->serverIP, DEFAULT_SERVERIP);
@@ -85,6 +94,7 @@ void LoadConfig(PUConfig* pConfig)
     pConfig->lat = 200 * 10000000;
     pConfig->lng = 200 * 10000000;
     pConfig->interval = DEFAULT_GPS_INTERVAL;
+    pConfig->bandwidth = 0;
 }
 
 int SetConfig(const PUConfig* pConfig)

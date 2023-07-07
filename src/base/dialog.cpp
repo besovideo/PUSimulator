@@ -1,4 +1,4 @@
-
+﻿
 #include <string>
 #include "dialog.h"
 #include "session.h"

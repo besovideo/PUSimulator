@@ -36,12 +36,15 @@ public:
     int  Logout();    // 下线
     bool BLogining() { return (!m_bOnline && m_session != 0); }  // 是否正在上线。
     bool BOnline() { return m_bOnline; }  // 是否已经上线。
+    bool BLogouting() { return m_bBusying && m_session == 0; }
+    bool BOffline() { return (!m_bOnline && m_session == 0); } // 是否离线状态
 
     // 给服务器发请求. 报警类型，子设备号，报警值，是否是结束报警，报警描述。
     int  SendAlarm(int alarmType, int index, int value, int bEnd, const char* desc);
     // 给服务器发命令. 
     int  SendCommand(int iMethod, int iSubMethod, char* pTargetID, void* pData, void* pUserData);
 
+    void SetUser(const char* id, const char* passwd);
     // 设置设备信息
     void SetName(const char* Name);  // 设备名称
     void SetManufacturer(const char* Manufacturer); // 制造商名字
@@ -64,7 +67,13 @@ public:
     int AddGPSChannel(CGPSChannelBase* pChannel); // 添加GPS通道, return 硬件号
     int AddTSPChannel(CTSPChannelBase* pChannel); // 添加串口通道
     // 注册文件接口类
-    int AddFileManager(CFileTransManager* pFile) { m_fileManager = pFile; }  // 添加文件接口类
+    void SetFileManager(CFileTransManager* pFile) { m_fileManager = pFile; }  // 添加文件接口类
+
+    // 文件操作
+    int UploadFile(BVCU_File_HTransfer* phTransfer, const char* localFilePathName, const char* remoteFileName);
+
+    // get相关接口
+    BVCU_PUCFG_DeviceInfo* GetDeviceInfo() { return &m_deviceInfo; }
 
 protected:
     BVCU_PUCFG_DeviceInfo  m_deviceInfo;
@@ -77,6 +86,7 @@ protected:
     BVCSP_SessionParam m_sesParam;
     BVCSP_HSession m_session;
     bool m_bOnline;
+    bool m_bBusying; // 是否正在上线或下线。
 
 public:
     // 获取

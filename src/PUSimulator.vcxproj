@@ -164,10 +164,11 @@
     <ClCompile Include="base\filetransfer.cpp" />
     <ClCompile Include="base\session.cpp" />
     <ClCompile Include="config.cpp" />
+    <ClCompile Include="file.cpp" />
     <ClCompile Include="gps.cpp" />
-    <ClCompile Include="loginout.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="media.cpp" />
+    <ClCompile Include="pusession.cpp" />
     <ClCompile Include="tsp.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
@@ -177,9 +178,11 @@
     <ClInclude Include="base\filetransfer.h" />
     <ClInclude Include="base\session.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="file.h" />
     <ClInclude Include="gps.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="media.h" />
+    <ClInclude Include="pusession.h" />
     <ClInclude Include="tsp.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

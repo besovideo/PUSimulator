@@ -1,9 +1,13 @@
 ﻿#include <stdio.h>
 #include <process.h>
-
+#include <string>
 #include "BVCSP.h"
 #include "main.h"
 
+
+#include "config.h"
+#include "pusession.h"
+#include "file.h"
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -14,17 +18,38 @@
 #endif // _WIN32
 #endif // _MSC_VER
 
+#define UPLOAD_FILE_PATH_NAME "./uploadfile.mp4"
+
+static CPUSession* pSession[1024] = { 0,0,0,0 };  // 全局Session
+static bool needOnline = false; // 是否需要在线，调用login和logout时修改
+static int concurrency = 100; // 并发请求数
+static CMyFileTrans fileTransManager; // 文件传输
+static BVCU_File_HTransfer hFileTrans[1024] = { 0,0,0,0 };  // 全局文件传输状态
+static int hFileStatus[1024] = { 0,0,0,0 };  // 全局文件传输状态
+
 // BVCSP日志回调
 void Log_Callback(int level, const char* log)
 {
     printf("[BVCSP LOG] %s\n", log);
 }
 
+void  File_OnEvent(BVCU_File_HTransfer hTransfer, void* pUserData, int iEventCode, BVCU_Result iResult) {
+    printf(">>>>>>>>>>>>>  file event: %d %d\n", iEventCode, iResult);
+    for (int i = 0; i < sizeof(hFileTrans) / sizeof(hFileTrans[0]); i++) {
+        if (hFileTrans[i] == hTransfer) {
+            hFileStatus[i] = iResult;
+        }
+    }
+}
+
 static bool bRun = true;
-static int cmdType = 0;
+static char cmdType = 0;
+static time_t lastPrintTime = 0;
 // 用来定时 读取音视频、GPS、串口数据，并发送。
 unsigned __stdcall Wall_App(void*)
 {
+    fileTransManager.m_OnEvent = File_OnEvent;
+
     // 初始化库
     BVCSP_SetLogCallback(Log_Callback, BVCU_LOG_LEVEL_INFO);
     BVCSP_Initialize(0, 0);
@@ -33,32 +58,42 @@ unsigned __stdcall Wall_App(void*)
     // 开始认证
     Auth();
 
-    while (bRun)
+    while (true)
     {
-        HandleEvent();
+        if (!bRun) // 退出程序，等待登录退出。
+            Logout();
+        int busy = HandleEvent();
         BVCSP_HandleEvent();
 
-        if (cmdType == 1)
+        if (!bRun && busy == 0) // 已全部退出
+            break;
+
+        if (cmdType == 'i')
         {
             Login(false);
         }
-        else if (cmdType == 2)
+        else if (cmdType == 'o')
         {
             Logout();
         }
-        else if (cmdType == 3)
+        else if (cmdType == 'a')
         {
             SendAlarm();
         }
-        else if (cmdType == 4)
+        else if (cmdType == 'c')
         {
             SendCommand();
+        }
+        else if (cmdType == 'f')
+        {
+            UploadFile();
         }
         cmdType = 0;
     }
 
     Logout();
     BVCSP_Finish();
+    cmdType = '\n';
     return 0;
 }
 
@@ -69,15 +104,210 @@ int main()
 
     while (1)
     {
-        int iType;
-        printf("0:exit  1:login  2:logout  3:alarm 4:command\r\n");
-        if (scanf_s("%d", &iType) != 1)
+        char cmd[128] = { 0 };
+        printf("            e :exit  i :login  o :logout  a :alarm c :command f :file \n");
+        gets_s(cmd);
+        //printf("============= %s ==============\n", cmd);
+        cmdType = cmd[0];
+        if (cmdType == 'e')
             break;
-        if (iType == 0)
-            break;
-        cmdType = iType;
+
+        lastPrintTime = 0;
     }
     bRun = false;
-    Sleep(500); // 等待Wall_App线程退出。
+    for (int i = 0; i < 1000; i++) {
+        if (cmdType == '\n')
+            break;
+        Sleep(100); // 等待Wall_App线程退出。
+    }
     return 0;
+}
+
+// 登录服务器。从配置文件中读取设备信息，和服务器信息；请提前设置好。
+int Login(bool autoOption)
+{
+    needOnline = true;
+    if (autoOption && pSession[0] != 0)
+    {  // 自动操作不能重复登录。
+        return 0;
+    }
+    if (pSession[0] == 0)
+    {
+        PUConfig puconfig;
+        LoadConfig(&puconfig);
+        concurrency = puconfig.Concurrency;
+        fileTransManager.SetBandwidthLimit(puconfig.bandwidth);
+        int startID = 1;
+        int usersID = 1;
+        char puid[32];
+        char puName[32];
+        char userID[32];
+        if (sscanf_s(puconfig.ID, "PU_%X", &startID) != 1)
+            startID = 0x55AA0000;
+        for (int i = 0; i < puconfig.PUCount && i < sizeof(pSession) / sizeof(pSession[0]); i++)
+        {
+            sprintf_s(puid, "PU_%X", startID++);
+            sprintf_s(userID, "test_%d", usersID++);
+            pSession[i] = new CPUSession(puid, puconfig.relogin);
+            if (pSession[i])
+            {
+                if (puconfig.bUA != 0)
+                    pSession[i]->SetUser(userID, "123");
+                // ==================  设置设备信息，需要开发者根据自己设备情况设置 =============== 
+                // ==================  设置设备信息，需要开发者根据自己设备情况设置 =============== 
+                // ==================  设置设备信息，需要开发者根据自己设备情况设置 =============== 
+                sprintf_s(puName, "%s-%d", puconfig.Name, i + 1);
+                pSession[i]->SetName(puName);
+                pSession[i]->SetServer(puconfig.serverIP, puconfig.serverPort, puconfig.protoType, 60 * 1000, 4 * 1000);
+                pSession[i]->SetDevicePosition(puconfig.lat, puconfig.lng);
+                pSession[i]->RegisterChannel();
+                pSession[i]->SetFileManager(&fileTransManager);
+            }
+        }
+    }
+    if (pSession[0] == 0)
+        return -1;
+    // 上线服务器，lat,lng 应该改为当前设备定位位置。
+
+    return 0;
+}
+
+// 退出登录
+int Logout()
+{
+    needOnline = false;
+    return 0;
+}
+
+// 发送报警信息
+int SendAlarm()
+{
+    bool bFind = false;
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    {
+        if (pSession[i] != 0)
+        {
+            pSession[i]->SendAlarm(
+                BVCU_EVENT_TYPE_ALERTIN,
+                0,
+                0,
+                0,
+                "test"
+            );
+            bFind = true;
+        }
+    }
+    if (bFind)
+        return 0;
+    return -1;
+}
+
+// 发送命令
+int SendCommand()
+{
+    bool bFind = false;
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    {
+        if (pSession[i] != 0)
+        {
+            pSession[i]->SendCommand(BVCU_METHOD_QUERY, BVCU_SUBMETHOD_CMS_HTTPAPI, NULL, NULL, NULL);
+            bFind = true;
+        }
+    }
+    if (bFind)
+        return 0;
+    return -1;
+}
+
+// 上传文件
+void UploadFile() {
+
+    memset(hFileTrans, 0x00, sizeof(hFileTrans));
+
+    int uploadcount = 0;
+    time_t tnow = time(NULL);
+    tm* pnow = localtime(&tnow);
+    char nyr[32] = { 0 };
+    char sfm[32] = { 0 };
+    char remotefile[512] = { 0 };
+    strftime(nyr, sizeof(nyr), "%Y%m%d", pnow);
+    strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    {
+        if (pSession[i] != 0) {
+            if (pSession[i]->BOnline() && uploadcount < concurrency) {
+                uploadcount++;
+                BVCU_PUCFG_DeviceInfo* info = pSession[i]->GetDeviceInfo();
+                sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
+                BVCU_File_HTransfer hTransfer;
+                int result = pSession[i]->UploadFile(&hTransfer, UPLOAD_FILE_PATH_NAME, remotefile);
+                printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
+                hFileTrans[i] = hTransfer;
+                hFileStatus[i] = result;
+            }
+        }
+    }
+}
+
+// 
+int HandleEvent()
+{
+    time_t nowTime = time(NULL);
+    int totalCount = 0;
+    int onlineCount = 0;
+    int loginCount = 0;
+    int logoutCount = 0;
+    int offline = 0;
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    {
+        if (pSession[i] != 0) {
+            pSession[i]->HandleEvent(nowTime);
+            totalCount++;
+
+            if (pSession[i]->BLogining()) {
+                loginCount++;
+            }
+            else if (pSession[i]->BLogouting()) {
+                logoutCount++;
+            }
+            else if (pSession[i]->BOnline()) {
+                onlineCount++;
+                if (!needOnline && logoutCount == 0 && onlineCount <= concurrency) {
+                    pSession[i]->Logout();
+                }
+            }
+            else if (pSession[i]->BOffline()) {
+                offline++;
+                if (needOnline && offline <= concurrency && loginCount == 0 && pSession[i]->BFirst()) {
+                    pSession[i]->Login(BVCU_PU_ONLINE_THROUGH_ETHERNET, 200 * 10000000, 200 * 10000000);
+                }
+            }
+        }
+    }
+    fileTransManager.HandleEvent();
+
+    int ftrans = 0, ffail = 0, fok = 0, fall = 0;
+    for (int i = 0; i < sizeof(hFileTrans) / sizeof(hFileTrans[0]); i++) {
+        if (hFileTrans[i] != NULL) {
+            fall++;
+            CFileTransfer* filetrans = fileTransManager.FindFileTransfer(hFileTrans[i]);
+            if (filetrans != NULL) {
+                ftrans++;
+            }
+            else if (hFileStatus[i] != 0) {
+                ffail++;
+            }
+            else {
+                fok++;
+            }
+        }
+    }
+
+    if ((nowTime - lastPrintTime) > 4)
+    {
+        lastPrintTime = nowTime;
+        printf("  ==============  offline / logout / login / online / total    %d / %d / %d / %d / %d \n", offline, logoutCount, loginCount, onlineCount, totalCount);
+        printf("  ==============  trans / failed / ok / total    %d / %d / %d / %d \n", ftrans, ffail, fok, fall);
+    }
+    return onlineCount + loginCount + logoutCount;
 }

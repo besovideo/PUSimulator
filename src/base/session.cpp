@@ -24,6 +24,7 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     memset(m_TSPChannels, 0x00, sizeof(m_TSPChannels));
     m_session = 0;
     m_bOnline = false;
+    m_bBusying = false;
     m_fileManager = NULL;
     // 登录参数
     memset(&m_sesParam, 0x00, sizeof(m_sesParam));
@@ -47,6 +48,12 @@ CPUSessionBase::~CPUSessionBase()
     Logout();
 }
 
+void CPUSessionBase::SetUser(const char* id, const char* passwd)
+{
+    m_sesParam.iClientType = BVCSP_CLIENT_TYPE_UA;
+    strncpy_s(m_sesParam.szUserName, id, _TRUNCATE);
+    strncpy_s(m_sesParam.szPassword, passwd, _TRUNCATE);
+}
 void CPUSessionBase::SetName(const char* Name)
 {
     strncpy_s(m_deviceInfo.szName, Name, _TRUNCATE);
@@ -153,6 +160,76 @@ int CPUSessionBase::AddTSPChannel(CTSPChannelBase* pChannel)
     return -1;
 }
 
+int BVCU_BVCSP_DialogDownload(CFileTransfer* pFile, const BVCU_File_TransferParam* pBVCUParam, BVCSP_DialogParam* pBVCSPParam, BVCSP_DialogControlParam* pBVCSPCtrl)
+{
+    memset(pBVCSPParam, 0x00, sizeof(*pBVCSPParam));
+    pBVCSPParam->iSize = sizeof(*pBVCSPParam);
+    pBVCSPParam->pUserData = pFile;
+    strncpy_s(pBVCSPParam->stTarget.szID, sizeof(pBVCSPParam->stTarget.szID), pBVCUParam->szTargetID, _TRUNCATE);
+    pBVCSPParam->stTarget.iIndexMajor = BVCU_SUBDEV_INDEXMAJOR_DOWNLOAD;
+    pBVCSPParam->stTarget.iIndexMinor = -1;
+    pBVCSPParam->stFileTarget.pPathFileName = pBVCUParam->pRemoteFilePathName;
+    pBVCSPParam->stFileTarget.pFileInfoJson = pBVCUParam->pFileInfoJson;
+    pBVCSPParam->stFileTarget.iStartTime_iOffset = pBVCUParam->iFileStartOffset;
+    pBVCSPParam->stFileTarget.iEndTime_iFileSize = pFile->GetFileSize();
+    if (pBVCUParam->bUpload)
+        pBVCSPParam->iAVStreamDir = BVCU_MEDIADIR_DATASEND;
+    else
+        pBVCSPParam->iAVStreamDir = BVCU_MEDIADIR_DATARECV;
+    pBVCSPParam->bOverTCP = 1;
+    pBVCSPParam->afterRecv = CFileTransManager::OnAfterRecv_BVCSP;
+    pBVCSPParam->OnEvent = CFileTransManager::OnDialogEvent_BVCSP;
+    //control
+    memset(pBVCSPCtrl, 0x00, sizeof(*pBVCSPCtrl));
+    pBVCSPCtrl->iDelayMax = 5000;
+    pBVCSPCtrl->iDelayMin = 500;
+    pBVCSPCtrl->iDelayVsSmooth = 3;
+    pBVCSPCtrl->iTimeOut = pBVCUParam->iTimeOut;
+    return 1;
+}
+
+int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* localFilePathName, const char* remoteFilePathName)
+{
+    if (m_fileManager == NULL)
+        return BVCU_RESULT_E_NOTINITILIZED;
+    CFileTransfer* pFileTransfer = m_fileManager->AddFileTransfer();
+    if (pFileTransfer == NULL)
+        return BVCU_RESULT_E_ALLOCMEMFAILED;
+    BVCU_Result iResult = BVCU_RESULT_E_INVALIDARG;
+    BVCSP_HDialog cspDialog = NULL;
+    BVCU_File_TransferParam param;
+    memset(&param, 0x00, sizeof(param));
+    param.iSize = sizeof(param);
+    strcpy(param.szTargetID, "NRU_");
+    param.bUpload = 1;
+    param.pLocalFilePathName = (char*)localFilePathName;
+    param.pRemoteFilePathName = (char*)remoteFilePathName;
+    if (pFileTransfer->SetInfo(&param))
+    {
+        BVCSP_DialogParam cspParam;
+        BVCSP_DialogControlParam cspControl;
+        BVCU_BVCSP_DialogDownload(pFileTransfer, pFileTransfer->GetParam(), &cspParam, &cspControl);
+        cspParam.hSession = m_session;
+        cspParam.pUserData = this;
+        iResult = BVCSP_Dialog_Open(&cspDialog, &cspParam, &cspControl);
+    }
+    printf("%ld call OpenFile:%ld targetID:%s file:%s result:%d ",
+        m_session, pFileTransfer->GetHandle(), param.szTargetID, param.pRemoteFilePathName, iResult);
+    if (BVCU_Result_FAILED(iResult))
+    {
+        m_fileManager->RemoveFileTransfer(pFileTransfer);
+        if (phTransfer)
+            *phTransfer = NULL;
+    }
+    else
+    {
+        pFileTransfer->SetCSPDialog(cspDialog);
+        if (phTransfer)
+            *phTransfer = (BVCU_File_HTransfer)pFileTransfer->GetHandle();
+    }
+    return iResult;
+}
+
 void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout, int iKeepaliveInterval)
 {
     strncpy_s(m_sesParam.szServerAddr, IP, _TRUNCATE);
@@ -163,6 +240,7 @@ void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout,
 }
 int CPUSessionBase::Login(int through, int lat, int lng)
 {
+    m_bBusying = true;
     Logout();
     m_sesParam.pUserData = this;
     // 通道信息
@@ -245,17 +323,22 @@ int CPUSessionBase::Login(int through, int lat, int lng)
         , m_deviceInfo.szID, bvResult, m_session);
     if (pChannelList)
         delete[]pChannelList;
+    if (BVCU_Result_FAILED(bvResult))
+        m_bBusying = false;
     return bvResult;
 }
 int CPUSessionBase::Logout()
 {
     if (m_session)
     {
+        m_bBusying = true;
         BVCU_Result bvResult = BVCSP_Logout(m_session);
         printf("Call BVCSP_Logout(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
             , m_deviceInfo.szID, bvResult, m_session);
         m_bOnline = false;
         m_session = 0;
+        if (BVCU_Result_FAILED(bvResult))
+            m_bBusying = false;
     }
     m_bOnline = false;
     return 0;
@@ -368,6 +451,8 @@ void CPUSessionBase::OnSessionEvent(BVCSP_HSession hSession, int iEventCode, voi
         CPUSessionBase* pSession = (CPUSessionBase*)sesInfo.stParam.pUserData;
         if (pSession == 0 || hSession != pSession->m_session)
             return;
+
+        pSession->m_bBusying = false;
         if (iEventCode == BVCSP_EVENT_SESSION_OPEN)
         {
             if (BVCU_Result_SUCCEEDED(iResult))
@@ -377,7 +462,7 @@ void CPUSessionBase::OnSessionEvent(BVCSP_HSession hSession, int iEventCode, voi
             }
             else
             {
-                printf("Login failed: %d\n", iResult);
+                printf("============================= Login failed: %d\n", iResult);
                 pSession->m_session = 0;
                 pSession->m_bOnline = false;
             }
@@ -443,11 +528,12 @@ BVCU_Result CPUSessionBase::afterDialogRecv(BVCSP_HDialog hDialog, BVCSP_Packet*
 }
 BVCU_Result CPUSessionBase::OnNotify(BVCSP_HSession hSession, BVCSP_NotifyMsgContent* pData)
 {
-    printf("On Notify callback. submethod-%d \n", pData->iSubMethod);
+    printf("On Notify callback.  session = %p  submethod = %d \n", hSession, pData->iSubMethod);
     return BVCU_RESULT_S_OK;
 }
 BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pCommand)
 {
+    printf("On Notify callback.  session = %p  method = %d submethod = %d \n", hSession, pCommand->iMethod, pCommand->iSubMethod);
     CPUSessionBase* pSession = 0;
     BVCSP_SessionInfo sesInfo;
     if (BVCU_Result_SUCCEEDED(BVCSP_GetSessionInfo(hSession, &sesInfo)))

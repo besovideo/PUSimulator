@@ -87,6 +87,10 @@ bool CGPSChannel::ReadGPSData()
             m_position.iLongitude -= 2000;
             m_position.iLatitude -= 2000;
             m_position.iAngle = 225000;
+            if (m_position.iStarCount > 0)
+                m_position.iStarCount = 0;
+            else
+                m_position.iStarCount = 6;
         }
     }
     else if (m_position.iLongitude == m_lng)
@@ -139,7 +143,13 @@ void CGPSChannel::UpdateData()
         m_lasttime = now;
         ReadGPSData();
         WriteData(&m_position);
-        printf("send GPS Data, lat: %d  lng: %d\n", m_position.iLatitude, m_position.iLongitude);
+
+        static time_t lastPrintTime = 0;
+        if ((now - lastPrintTime) > 4)
+        {
+            lastPrintTime = now;
+            printf("send GPS Data, lat: %d  lng: %d\n", m_position.iLatitude, m_position.iLongitude);
+        }
     }
 }
 

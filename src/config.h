@@ -13,7 +13,9 @@
 struct PUConfig
 {
     // info
+    int  bUA; // 是否UA登录
     int  PUCount;  // 设备个数
+    int  Concurrency; // 并发 请求数
     char ID[32];   // 设备ID号
     char Name[64]; // 设备名称
     int  lat;      // 维度，1/1000000
@@ -29,6 +31,8 @@ struct PUConfig
     // 媒体通道
     char mediaName[64];  // GPS 通道名称
     char audioFile[64];  // 音频文件名称
+    // 文件传输
+    int bandwidth; // 带宽限制。单位kbps，0表示无限制，建议限制文件传输的带宽。
 };
 
 // 加载配置信息，pConfig带回
