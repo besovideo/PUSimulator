@@ -3,7 +3,6 @@
 #include <time.h>
 #include "base/dialog.h"
 
-#define VIDEO_FILE_PATH_NAME "./h264_320x256.264"
 // 音视频 通道
 class CMediaChannel : public CAVChannelBase
 {
@@ -27,6 +26,7 @@ protected:
     int m_audioPackLen; // 每个音频帧数据大小
     FILE* m_audioFile;// 音频输入文件
     FILE* m_videoFile;// 音频输入文件
+    SAVCodec_ID m_videoCodec;
 
     BVCU_PUCFG_PTZAttr  m_ptzAttr;// 云台测试
 

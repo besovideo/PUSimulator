@@ -30,7 +30,8 @@ struct PUConfig
     char gpsName[64];  // GPS 通道名称
     // 媒体通道
     char mediaName[64];  // GPS 通道名称
-    char audioFile[64];  // 音频文件名称
+    char audioFile[256];  // 音频文件名称
+    char videoFile[256];  // 音频文件名称
     // 文件传输
     int bandwidth; // 带宽限制。单位kbps，0表示无限制，建议限制文件传输的带宽。
 };

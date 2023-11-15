@@ -45,6 +45,9 @@ void LoadConfig(PUConfig* pConfig)
     GetPrivateProfileStringA("media", "audio", "", pConfig->audioFile, sizeof(pConfig->audioFile), CONFIG_FILE_PATH_NAME);
     if (pConfig->audioFile[0] == 0)
         strcpy(pConfig->audioFile, "8k_1_16.g711a");
+    GetPrivateProfileStringA("media", "video", "", pConfig->videoFile, sizeof(pConfig->videoFile), CONFIG_FILE_PATH_NAME);
+    if (pConfig->videoFile[0] == 0)
+        strcpy(pConfig->videoFile, "h264_320x256.264");
     pConfig->PUCount = GetPrivateProfileIntA("info", "count", 1, CONFIG_FILE_PATH_NAME);
     if (pConfig->PUCount <= 0 || pConfig->PUCount > 1024)
         pConfig->PUCount = 1;
@@ -75,6 +78,7 @@ int SetConfig(const PUConfig* pConfig)
     WritePrivateProfileStringA("gps", "name", pConfig->gpsName, CONFIG_FILE_PATH_NAME);
     WritePrivateProfileStringA("media", "name", pConfig->mediaName, CONFIG_FILE_PATH_NAME);
     WritePrivateProfileStringA("media", "audio", pConfig->audioFile, CONFIG_FILE_PATH_NAME);
+    WritePrivateProfileStringA("media", "video", pConfig->videoFile, CONFIG_FILE_PATH_NAME);
     return 0;
 }
 #else
@@ -88,6 +92,7 @@ void LoadConfig(PUConfig* pConfig)
     strncpy_s(pConfig->gpsName, "GPS");
     strncpy_s(pConfig->mediaName, "0");
     strncpy_s(pConfig->audioFile, "8k_1_16.g711a");
+    strncpy_s(pConfig->videoFile, "h264_320x256.264");
     pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = DEFAULT_PROTOTYPE;
     pConfig->bRelogin = 0;

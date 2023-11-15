@@ -60,6 +60,7 @@ char* CMediaChannel::ReadVideo(char* buf, int* len)
     char* pStart = 0;
     char* pEnd = 0;
     int readlen = 0;
+    int minPackLen = 80; // 读取帧最小大小，sps/pps要和I帧一起。
     while (readlen < buflen)
     {
         int onelen = fread(pRead, 1, 160, m_videoFile);
@@ -84,9 +85,11 @@ char* CMediaChannel::ReadVideo(char* buf, int* len)
             {  // 往后移，准备找end
                 onelen = onelen - (pStart - pRead) - 3;
                 pRead = pStart + 3;
+                if (pStart[3] == 0x67 || pStart[4] == 0x67)
+                    minPackLen = 980; // I帧不会比这个值小
             }
         }
-        if (pStart != 0 && pEnd == 0 && readlen > 160) // 已经找到开始，没有找到结尾，一个帧包不小于160，防止sps\pps单独发送。
+        if (pStart != 0 && pEnd == 0 && readlen > minPackLen) // 已经找到开始，没有找到结尾，一个帧包不小于160，防止sps\pps单独发送。
         {
             pEnd = findhead(pRead, onelen);
             if (pEnd != 0)
@@ -135,7 +138,7 @@ char* CMediaChannel::ReadAudio(char* buf, int* len)
 }
 void CMediaChannel::Reply()
 {
-    static char videoEx[64] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x80, 0x1E, 0xDA, 0x05, 0x02, 0x11, 0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80 };
+    //static char videoEx[64] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x80, 0x1E, 0xDA, 0x05, 0x02, 0x11, 0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80 };
     static int  videoExLen = 20;
     static char audioEx[2] = { 0x12, 0x88 };
     // 以上扩展数据，都是根据自带 音视频文件数据编码参数写死的，修改数据来源时，需要根据您的数据源确定。
@@ -145,9 +148,10 @@ void CMediaChannel::Reply()
         BVCSP_AudioCodec audioSdp;
         memset(&videoSdp, 0x00, sizeof(videoSdp));
         memset(&audioSdp, 0x00, sizeof(audioSdp));
-        videoSdp.codec = SAVCODEC_ID_H264;
-        videoSdp.pExtraData = videoEx;
-        videoSdp.iExtraDataSize = videoExLen;
+        videoSdp.codec = m_videoCodec;
+
+        //videoSdp.pExtraData = videoEx;
+        //videoSdp.iExtraDataSize = videoExLen;
         audioSdp.iBitrate = 32000;
         audioSdp.iChannelCount = 1;
         audioSdp.iSampleRate = 8000;
@@ -234,11 +238,20 @@ BVCU_Result CMediaChannel::OnOpenRequest()
     // 这里打开您的音视频设备，异步打开成功后，调用ReplySDP()接口回复请求。
     // 音视频通道可能会多次收到打开请求，因为请求多会修改需要的媒体类型。所以要注意不要重复打开。
     printf("================  recv open media request \n");
+    PUConfig puconfig;
+    LoadConfig(&puconfig);
     if (BNeedVideoIn())
     {   // 请求视频，打开视频输入设备
-        printf("================  open video media now\n");
+        printf("================  open video media now: %s\n", puconfig.videoFile);
         if (m_videoFile == 0)
-            m_videoFile = fopen(VIDEO_FILE_PATH_NAME, "rb");
+            m_videoFile = fopen(puconfig.videoFile, "rb");
+        if (m_videoFile == 0) {
+            printf(">>>>>>>>>>>>>>> open video file failed!!!!!! %s", puconfig.videoFile);
+        }
+        m_videoCodec = SAVCODEC_ID_H264;
+        if (strstr(puconfig.videoFile, "265") != nullptr) {
+            m_videoCodec = SAVCODEC_ID_H265;
+        }
     }
     else if (m_videoFile)
     {   // 不需要视频，如果已经打开，请关闭
@@ -247,9 +260,7 @@ BVCU_Result CMediaChannel::OnOpenRequest()
     }
     if (BNeedAudioIn())
     {   // 请求音频，打开音频输入设备
-        PUConfig puconfig;
-        LoadConfig(&puconfig);
-        printf("================  open audio media now\n");
+        printf("================  open audio media now: %s\n", puconfig.audioFile);
         if (m_audioFile == 0)
             m_audioFile = fopen(puconfig.audioFile, "rb");
         if (strstr(puconfig.audioFile, "g726") != nullptr)
@@ -310,6 +321,10 @@ void CMediaChannel::OnPLI()
         if (m_videoFile)
         {   // 这里跳转到文件开始位置，是因为 文件开始位置是关键帧。
             fseek(m_videoFile, 0, SEEK_SET);
+        }
+        if (m_audioFile)
+        {   // 这里跳转到文件开始位置，是因为 文件开始位置是关键帧。
+            fseek(m_audioFile, 0, SEEK_SET);
         }
     }
 }
