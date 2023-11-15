@@ -131,10 +131,10 @@ bool CGPSChannel::ReadGPSData()
     }
     return true;
 }
-void CGPSChannel::UpdateData()
+const BVCU_PUCFG_GPSData* CGPSChannel::UpdateData()
 {
     if (!BOpen())
-        return;
+        return NULL;
     // ========================  定时从设备中获取最新位置，并上报， 下面是模拟位置
     time_t now = time(NULL);
     int dely = now - m_lasttime;
@@ -150,7 +150,9 @@ void CGPSChannel::UpdateData()
             lastPrintTime = now;
             printf("send GPS Data, lat: %d  lng: %d\n", m_position.iLatitude, m_position.iLongitude);
         }
+        return &m_position;
     }
+    return NULL;
 }
 
 BVCU_Result CGPSChannel::OnSetName(const char* name)

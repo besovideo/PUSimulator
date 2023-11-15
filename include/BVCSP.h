@@ -58,6 +58,10 @@ extern "C" {
         BVCSP_DATA_TYPE_VIDEO, // 视频帧数据 
         BVCSP_DATA_TYPE_GPS,   // GPS数据  BVCU_PUCFG_GPSData
         BVCSP_DATA_TYPE_TSP,   // 串口数据  二进制数据流
+        BVCSP_DATA_TYPE_RTP_AUDIO, // rtp/rtcp 音频数据
+        BVCSP_DATA_TYPE_RTP_VIDEO, // rtp/rtcp 视频数据
+        BVCSP_DATA_TYPE_RTP_GPS,   // rtp/rtcp GPS数据
+        BVCSP_DATA_TYPE_RTP_TSP,   // rtp/rtcp TSP数据
     }BVCSP_DATA_TYPE;
 
     typedef enum _BVCSP_SESSION_STATUS
@@ -72,6 +76,8 @@ extern "C" {
     typedef enum _BVCSP_DIALOG_OPTIONS
     {
         BVCSP_DIALOG_OPTIONS_NOFMTP = 1 << 0, // SDP中不添加fmtp。
+        BVCSP_DIALOG_OPTIONS_NOPACK = 1 << 1, // 不需要组帧。
+        BVCSP_DIALOG_OPTIONS_RTP = 1 << 2,    // 需要 rtp/rtcp 数据。
     }BVCSP_DIALOG_OPTIONS;
 
     typedef  void* BVCSP_HSession;

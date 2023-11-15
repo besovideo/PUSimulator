@@ -18,6 +18,8 @@ protected:
     // 收到配置设备信息命令。成功返回0。添加其它命令的支持，可以参考OnSetInfo的实现原理。
     // name:设备名称。lat,lng 设备WGS84坐标位置,1/10000000.
     virtual BVCU_Result OnSetInfo(const char* name, int lat, int lng) = 0;
+    // 收到服务器(取消)订阅GPS
+    virtual BVCU_Result OnSubscribeGPS(int bStart, int iInterval) = 0;
     // 上线服务器结果回调通知.
     virtual void OnLoginEvent(BVCU_Result iResult) = 0;
     // 服务器掉线回调通知.
@@ -43,6 +45,8 @@ public:
     int  SendAlarm(int alarmType, int index, int value, int bEnd, const char* desc);
     // 给服务器发命令. 
     int  SendCommand(int iMethod, int iSubMethod, char* pTargetID, void* pData, void* pUserData);
+    // 给服务器发通知. 
+    int  SendNotify(int iSubMethod, void* pData);
 
     void SetUser(const char* id, const char* passwd);
     // 设置设备信息

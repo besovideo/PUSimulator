@@ -18,6 +18,9 @@ protected:
     bool m_bNeedOnline; // 是否需要上线。
     int m_relogintime; // 是否断线重连，0：否，其他值：间隔时间，秒
 
+    bool m_bSubGPS;     // 是否被订阅了GPS数据
+    int  m_iInterval;   // 订阅GPS间隔，秒
+    int  m_lastgpstime; // 最后上报GPS时间
 public:
     CPUSession(const char* ID, int relogintime);
     ~CPUSession();
@@ -29,6 +32,7 @@ public:
 
 private:
     virtual BVCU_Result OnSetInfo(const char* name, int lat, int lng);
+    virtual BVCU_Result OnSubscribeGPS(int bStart, int iInterval);
     virtual void OnLoginEvent(BVCU_Result iResult);
     virtual void OnOfflineEvent(BVCU_Result iResult);
     virtual void OnCommandReply(BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam);

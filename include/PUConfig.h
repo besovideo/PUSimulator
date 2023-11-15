@@ -469,7 +469,7 @@ typedef struct  _BVCU_PUCFG_GPSParam {
 }BVCU_PUCFG_GPSParam;
 
 typedef struct  _BVCU_PUCFG_GPSData {
-    BVCU_WallTime stTime;// 数据对应的时间
+    BVCU_WallTime stTime;// 数据对应的时间,UTC时间
     int  iLongitude; // 经度，东经是正值，西经负值，单位1/10000000度
     int  iLatitude;  // 纬度，北纬是正值，南纬是负值，单位1/10000000度
     int  iHeight; // 高度，单位1/100米
@@ -479,8 +479,16 @@ typedef struct  _BVCU_PUCFG_GPSData {
     int  bAntennaState; // 天线状态(1-好，0-坏，2-差分定位，4-RTK固定解定位，5-RTK浮点解定位，6-推算定位) 
     int  bOrientationState; // 定位状态(1-定位，0-不定位) 
     int  iSatelliteSignal;  // 信号来源 BVCU_PUCFG_SATELLITE_* 组合
-    int  iReserved[4];
+    int  iReserved[3];
+    char* pPUID; // PU ID，设备ID号，发送为空，接收订阅的GPS数据时有效。
 }BVCU_PUCFG_GPSData;
+
+typedef struct  _BVCU_PUCFG_GPSDatas {
+    BVCU_PUCFG_GPSData* pGPSDatas; // GPS 数据列表
+    int  iCount; // GPS 数据列表数据个数
+    int  bMakeup; // 0: 实时数据，1： 补录数据
+    int  iReserved[2]; // 保留对齐，保持为0.
+}BVCU_PUCFG_GPSDatas;
 
 typedef struct  _BVCU_PUCFG_GPSSpeedLimit {
     int  bEnable;        // 是否启用，0:不启用 1：启用
@@ -997,6 +1005,14 @@ typedef struct _BVCU_PUCFG_Snapshot {
     int  iCycleCount; // 指定的抓拍周期数，当bStart==2 时有意义。
     char szFTPID[BVCU_MAX_ID_LEN + 1]; // 抓拍图片上传服务器ID，如果ID为空，表示不需要上传。
 }BVCU_PUCFG_Snapshot;
+
+// 订阅设备端数据，例如：GPS实时位置
+typedef struct _BVCU_PUCFG_Subscribe {
+    int  bStart;      // 1-开始订阅，0-停止订阅
+    int  iInterval;   // 每次上报数据时间间隔，单位：秒。GPS数据推荐 >= 3有效,<=0时使用GPSParam中的iReportInterval。
+    char szType[BVCU_MAX_ID_LEN + 1];   // 数据类型。例如："GPS"
+    char szSource[10][BVCU_MAX_ID_LEN + 1]; // 来源对象ID，空：表示订阅全部来源。
+}BVCU_PUCFG_Subscribe;
 
 // 图片同步
 typedef struct _BVCU_PUCFG_Picture {

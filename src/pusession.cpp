@@ -16,6 +16,9 @@ CPUSession::CPUSession(const char* ID, int relogintime)
     , m_pTSP(NULL)
     , m_bNeedOnline(false)
     , m_relogintime(relogintime)
+    , m_bSubGPS(false)
+    , m_iInterval(5)
+    , m_lastgpstime(0)
 {
 }
 CPUSession::~CPUSession()
@@ -40,8 +43,25 @@ void CPUSession::HandleEvent(time_t nowTime)
         }
         return;
     }
-    if (m_pGPS)
-        m_pGPS->UpdateData();
+    if (m_pGPS) {
+        const BVCU_PUCFG_GPSData* newGps = m_pGPS->UpdateData();
+        if (m_bSubGPS) {
+            time_t now = time(NULL);
+            int dely = now - m_lastgpstime;
+            if (dely >= m_iInterval)
+            {
+                m_lastgpstime = now;
+                if (newGps == NULL)
+                    newGps = m_pGPS->OnGetGPSData();
+
+                BVCU_PUCFG_GPSDatas gpss;
+                memset(&gpss, 0, sizeof(gpss));
+                gpss.iCount = 1;
+                gpss.pGPSDatas = (BVCU_PUCFG_GPSData*)newGps;
+                SendNotify(BVCU_SUBMETHOD_SUBSCRIBE_GPS, &gpss);
+            }
+        }
+    }
     if (m_pTSP)
         m_pTSP->SendData();
     if (m_pMedia)
@@ -62,6 +82,8 @@ int CPUSession::Logout()
 {
     m_bNeedOnline = false;
     m_lastReloginTime = 0;
+    m_bSubGPS = false;
+    m_lastgpstime = 0;
     return CPUSessionBase::Logout();
 }
 
@@ -75,6 +97,20 @@ BVCU_Result CPUSession::OnSetInfo(const char* name, int lat, int lng)
     puconfig.lng = lng;
     SetConfig(&puconfig);
     SetName(name);
+    return BVCU_RESULT_S_OK;
+}
+// 收到服务器(取消)订阅GPS
+BVCU_Result CPUSession::OnSubscribeGPS(int bStart, int iInterval)
+{
+    m_bSubGPS = bStart;
+    m_iInterval = iInterval;
+    if (m_iInterval < 3) {
+        m_iInterval = 3;
+        if (m_pGPS != NULL) {
+            const BVCU_PUCFG_GPSParam* param = m_pGPS->OnGetGPSParam();
+            m_iInterval = param->iReportInterval;
+        }
+    }
     return BVCU_RESULT_S_OK;
 }
 // 在线状态变化通知，登录/退出 服务器
@@ -94,6 +130,8 @@ void CPUSession::OnLoginEvent(BVCU_Result iResult)
 }
 void CPUSession::OnOfflineEvent(BVCU_Result iResult)
 {
+    m_bSubGPS = false;
+    m_lastgpstime = 0;
     printf("======================== server offline: %d ==========================\n", iResult);
 }
 void CPUSession::OnCommandReply(BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam)

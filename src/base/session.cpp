@@ -416,6 +416,22 @@ int CPUSessionBase::SendCommand(int iMethod, int iSubMethod, char* pTargetID, vo
     return BVCU_RESULT_E_BADREQUEST;
 }
 
+int CPUSessionBase::SendNotify(int iSubMethod, void* pData)
+{
+    BVCSP_Notify notify;
+    memset(&notify, 0x00, sizeof(notify));
+    notify.iSize = sizeof(notify);
+    notify.stMsgContent.iSize = sizeof(notify.stMsgContent);
+    notify.stMsgContent.iSubMethod = iSubMethod;
+    if (pData != NULL) {
+        notify.stMsgContent.stMsgContent.iDataCount = 1;
+        notify.stMsgContent.stMsgContent.pData = pData;
+    }
+    BVCU_Result bvResult = BVCSP_SendNotify(m_session, &notify);
+    printf("Call BVCSP_SendNotify code:%d session:%p\n", bvResult, m_session);
+    return bvResult;
+}
+
 
 CChannelBase* CPUSessionBase::GetChannelBase(int channelIndex)
 {
@@ -672,6 +688,18 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 if (pParam)
                 {
                     szResult.iResult = pSession->m_avChannels[index]->OnPTZCtrl(pParam);
+                    pCommand->OnEvent(hSession, pCommand, &szResult);
+                    return BVCU_RESULT_S_OK;
+                }
+            }
+        }
+        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SUBSCRIBE)
+        {   // 订阅/取消订阅 GPS。输入类型：BVCU_PUCFG_Subscribe;输出类型：无
+            const BVCU_PUCFG_Subscribe* pParam = (BVCU_PUCFG_Subscribe*)pCommand->stMsgContent.pData;
+            if (pParam)
+            {
+                if (strcmpi("GPS", pParam->szType) == 0) {
+                    szResult.iResult = pSession->OnSubscribeGPS(pParam->bStart, pParam->iInterval);
                     pCommand->OnEvent(hSession, pCommand, &szResult);
                     return BVCU_RESULT_S_OK;
                 }

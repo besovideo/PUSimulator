@@ -182,12 +182,6 @@ typedef enum _BVCU_DIALOG_STATUS {
     BVCU_DIALOG_STATUS_E_ALL = BVCU_DIALOG_STATUS_E_AUDIO | BVCU_DIALOG_STATUS_E_VIDEO,
 }BVCU_DIALOG_STATUS;
 
-// subscribe状态
-typedef enum _BVCU_SUBSCRIBE_STATUS {
-    BVCU_SUBSCRIBE_OFF = 0,
-    BVCU_SUBSCRIBE_ON,
-}BVCU_SUBSCRIBE_STATUS;
-
 // 传输层协议类型
 typedef enum _BVCU_PROTOTYPE {
     BVCU_PROTOTYPE_TCP = 0,
@@ -231,7 +225,6 @@ typedef enum _BVCU_METHOD_TYPE {
     BVCU_METHOD_UNKNOWN = 0,
     BVCU_METHOD_QUERY,
     BVCU_METHOD_CONTROL,
-    BVCU_METHOD_SUBSCRIBE,
 
     BVCU_METHOD_RESERVED = 0x80000,//保留供内部使用
 }BVCU_METHOD_TYPE;
@@ -407,6 +400,7 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_PU_USER_DELUSER,  //删除设备使用者。输入类型：BVCU_PUCFG_User；输出类型：无；触发类型：同名Notify
     BVCU_SUBMETHOD_PU_USER_OPERATE,  //绑定或解绑设备。输入类型：BVCU_PUCFG_UserOperate；输出类型：无；触发类型：同名Notify
     BVCU_SUBMETHOD_PU_SNAPSHOT_ONE,  //手动抓拍一张图片并上传。输入类型：无；输出类型：BVCU_Search_FileInfo；
+    BVCU_SUBMETHOD_PU_SUBSCRIBE,     // 订阅、取消订阅数据。输入类型：BVCU_PUCFG_Subscribe；输出类型：无
 
     //User部分---------------------------
     BVCU_SUBMETHOD_USER_ADDGROUP = 0x22000, //添加用户组。输入类型：BVCU_UCFG_UserGroupInfo；输出类型：BVCU_UCFG_UserGroup；触发类型：同名Notify
@@ -521,8 +515,9 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_SYNCHRONIZATION_NOTIFY = BVCU_SUBMETHOD_PU_SYNCHRONIZATION, //同步图片（下载PU上传的图片）。负载：BVCU_PUCFG_Picture
     BVCU_SUBMETHOD_PU_RECORDSTATUS_NOTIFY = BVCU_SUBMETHOD_PU_RECORDSTATUS,    //通知设备存储状态变化（录像、录音、GPS..）。负载：BVCU_PUCFG_RecordStatus
 
-    BVCU_SUBMETHOD_LINKACTION_NOTIFY = 0x30000,//报警联动执行通知。负载BVCU_Event_LinkAction_Notify
-    BVCU_SUBMETHOD_EVENT_NOTIFY,//发生报警事件通知。负载BVCU_Event_Source
+    BVCU_SUBMETHOD_LINKACTION_NOTIFY = 0x30000,// 报警联动执行通知。负载:BVCU_Event_LinkAction_Notify
+    BVCU_SUBMETHOD_EVENT_NOTIFY,  // 发生报警事件通知。负载: BVCU_Event_Source
+    BVCU_SUBMETHOD_SUBSCRIBE_GPS, // 上报/收到 订阅的GPS数据。负载: BVCU_PUCFG_GPSDatas
 
     //=============收到的command=======================
     //应用程序在Session的OnCmmand回调中收到命令，处理后配置BVCU_Event_SessionCmd参数并执行命令的OnEvent回调，BVCU_Event_SessionCmd.iResult表示命令执行结果。

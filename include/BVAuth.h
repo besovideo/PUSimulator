@@ -50,6 +50,11 @@ LIBBVCSP_API BVCU_Result BVCSP_Trial(int authCode);
 LIBBVCSP_API BVCU_Result BVCSP_SetReConnect(int isReConnect);
 
 /**
+    是否连接 1连接, 2不连接(一次都不连接)
+*/
+LIBBVCSP_API BVCU_Result BVCSP_SeConnect(int isConnect);
+
+/**
     加密BVCSP_GetEncryptedData()获得的数据,
     (用于测试, 不推荐使用)
 */
