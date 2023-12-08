@@ -88,6 +88,10 @@ unsigned __stdcall Wall_App(void*)
         {
             UploadFile();
         }
+        else if (cmdType == 'F')
+        {
+            UploadFile2();
+        }
         cmdType = 0;
     }
 
@@ -105,7 +109,7 @@ int main()
     while (1)
     {
         char cmd[128] = { 0 };
-        printf("            e :exit  i :login  o :logout  a :alarm c :command f :file \n");
+        printf("            e :exit  i :login  o :logout  a :alarm c :command f :file F :file2 \n");
         gets_s(cmd);
         //printf("============= %s ==============\n", cmd);
         cmdType = cmd[0];
@@ -219,7 +223,7 @@ int SendCommand()
     return -1;
 }
 
-// 上传文件
+// 上传文件，测试多个设备并发上传不同文件
 void UploadFile() {
 
     memset(hFileTrans, 0x00, sizeof(hFileTrans));
@@ -232,6 +236,7 @@ void UploadFile() {
     char remotefile[512] = { 0 };
     strftime(nyr, sizeof(nyr), "%Y%m%d", pnow);
     strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
+
     for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
     {
         if (pSession[i] != 0) {
@@ -245,6 +250,34 @@ void UploadFile() {
                 hFileTrans[i] = hTransfer;
                 hFileStatus[i] = result;
             }
+        }
+    }
+}
+
+// 上传文件，测试同一个设备并发上传同一个文件
+void UploadFile2() {
+
+    memset(hFileTrans, 0x00, sizeof(hFileTrans));
+
+    int uploadcount = 0;
+    time_t tnow = time(NULL);
+    tm* pnow = localtime(&tnow);
+    char nyr[32] = { 0 };
+    char sfm[32] = { 0 };
+    char remotefile[512] = { 0 };
+    strftime(nyr, sizeof(nyr), "%Y%m%d", pnow);
+    strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
+
+    if (pSession[0] != 0 && pSession[0]->BOnline()) {
+        BVCU_PUCFG_DeviceInfo* info = pSession[0]->GetDeviceInfo();
+        for (int i = 0; i < concurrency; i++)
+        {
+            sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
+            BVCU_File_HTransfer hTransfer;
+            int result = pSession[0]->UploadFile(&hTransfer, UPLOAD_FILE_PATH_NAME, remotefile);
+            printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
+            hFileTrans[i] = hTransfer;
+            hFileStatus[i] = result;
         }
     }
 }
