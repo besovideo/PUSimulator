@@ -18,6 +18,7 @@ public:
     virtual BVCU_PUCFG_PTZAttr* OnGetPTZParam() { return &m_ptzAttr; } // 收到平台发来的云台查询命令。
 
 protected:
+    time_t m_replytime;   // 回复请求时间。秒。time(); // 用于控制回复延迟（模拟设备回的慢）
     int m_interval;   // 上报数据时间间隔，毫秒。// 用于模拟收到音视频输入数据
     int m_lasttime;   // 上次上报时间。毫秒。GetTickCount();
     int m_lastAdjtime;   // 上次调整码率时间。毫秒。GetTickCount();

@@ -399,14 +399,14 @@ extern "C" {
         int iVideoLostRateShortTerm;
         int iAudioLostRateShortTerm;
         int iVideoRecvFPSShortTerm;
-        int iVideoKbpsShortTerm;
-        int iAudioKbpsShortTerm;
+        int iVideoKbpsShortTerm; // 视频数据码率，单位 Kbits/second 
+        int iAudioKbpsShortTerm; // 音频数据码率，单位 Kbits/second 
 
         // 发送数据，网络部分短时间时间统计数据 
         int iVideoLostRateShortTerm_Send;
         int iAudioLostRateShortTerm_Send;
-        int iVideoKbpsShortTerm_Send;
-        int iAudioKbpsShortTerm_Send;
+        int iVideoKbpsShortTerm_Send; // 视频数据码率，单位 Kbits/second 
+        int iAudioKbpsShortTerm_Send; // 音频数据码率，单位 Kbits/second 
         int iGuessBandwidthSend; // 库内评估的上行带宽，单位 Kbits/second。 > 0 时有效。
     }BVCSP_DialogInfo;
 
@@ -475,7 +475,7 @@ extern "C" {
         // 登录密码 
         char szPassword[BVCU_MAX_PASSWORD_LEN + 1];
 
-        // Ukey ID。从UKey中获得的UKeyID。登录验证中使用。如果为空，表示没有UKey 
+        // Ukey ID。从UKey中获得的UKeyID。登录验证中使用。如果为空，表示没有UKey; 如果是"password_encrypted"，表示使用加密密码，密码=szPassword+szUkeyCode
         char szUKeyID[BVCU_MAX_ID_LEN + 1];
 
         // Ukey 授权码。 从UKey中获得的验证授权码。如果为空，表示没有UKey授权码 

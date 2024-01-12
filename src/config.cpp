@@ -54,6 +54,9 @@ void LoadConfig(PUConfig* pConfig)
     pConfig->Concurrency = GetPrivateProfileIntA("info", "concurrency", 1, CONFIG_FILE_PATH_NAME);
     if (pConfig->Concurrency <= 0 || pConfig->Concurrency > 1024)
         pConfig->Concurrency = 100;
+    pConfig->Slow = GetPrivateProfileIntA("info", "slow", 1, CONFIG_FILE_PATH_NAME);
+    if (pConfig->Slow < 0 || pConfig->Slow > 60)
+        pConfig->Slow = 1;
     pConfig->bandwidth = GetPrivateProfileIntA("file", "bandwidth", 1, CONFIG_FILE_PATH_NAME);
 }
 
@@ -86,6 +89,7 @@ void LoadConfig(PUConfig* pConfig)
 {
     pConfig->PUCount = 1;
     pConfig->Concurrency = 100;
+    pConfig->Slow = 1;
     strncpy_s(pConfig->ID, DEFAULT_ID);
     strncpy_s(pConfig->Name, DEFAULT_NAME);
     strncpy_s(pConfig->serverIP, DEFAULT_SERVERIP);

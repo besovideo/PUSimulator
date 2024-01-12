@@ -138,6 +138,9 @@ char* CMediaChannel::ReadAudio(char* buf, int* len)
 }
 void CMediaChannel::Reply()
 {
+    if ((time(NULL) - m_replytime) < 0) {
+        return;
+    }
     //static char videoEx[64] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x80, 0x1E, 0xDA, 0x05, 0x02, 0x11, 0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80 };
     static int  videoExLen = 20;
     static char audioEx[2] = { 0x12, 0x88 };
@@ -282,6 +285,7 @@ BVCU_Result CMediaChannel::OnOpenRequest()
     {   // 请求音频输出，打开音频输出设备
         printf("================  open audio out now\n");
     }
+    m_replytime = time(NULL) + puconfig.Slow;
     return BVCU_RESULT_S_OK;
 }
 void CMediaChannel::OnOpen()

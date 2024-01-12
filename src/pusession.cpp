@@ -90,12 +90,12 @@ int CPUSession::Logout()
 // 重构设置设备信息接口，保存平台下发的配置信息，回复0：成功。
 BVCU_Result CPUSession::OnSetInfo(const char* name, int lat, int lng)
 {
-    PUConfig puconfig;
+    /*PUConfig puconfig;
     LoadConfig(&puconfig);
     strncpy_s(puconfig.Name, sizeof(puconfig.Name), name, _TRUNCATE);
     puconfig.lat = lat;
     puconfig.lng = lng;
-    SetConfig(&puconfig);
+    SetConfig(&puconfig);*/
     SetName(name);
     return BVCU_RESULT_S_OK;
 }
@@ -125,7 +125,7 @@ void CPUSession::OnLoginEvent(BVCU_Result iResult)
     }
     else
     {
-        printf("======================== login faild: %d ==========================\n", iResult);
+        printf("================== login faild: %d  %s %d ==================\n", iResult, m_sesParam.szServerAddr, m_sesParam.iServerPort);
     }
 }
 void CPUSession::OnOfflineEvent(BVCU_Result iResult)

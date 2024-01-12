@@ -16,6 +16,7 @@ struct PUConfig
     int  bUA; // 是否UA登录
     int  PUCount;  // 设备个数
     int  Concurrency; // 并发 请求数
+    int  Slow; // 命令回复延迟, 秒
     char ID[32];   // 设备ID号
     char Name[64]; // 设备名称
     int  lat;      // 维度，1/1000000
