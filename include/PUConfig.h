@@ -963,7 +963,7 @@ typedef struct _BVCU_PUCFG_Storage_Schedule {
     BVCU_WallTime stEnd;  // 结束时间。在开始/结束时间这段范围内，计划有效。
 }BVCU_PUCFG_Storage_Schedule;
 
-// 分区信息 针对存储器
+// 分区信息 针对存储器，默认只读
 typedef struct _BVCU_PUCFG_Storage_Media {
     char szMediaName[BVCU_MAX_FILE_NAME_LEN + 1];// 唯一标识该分区的名字或者路径
     char szFSName[BVCU_MAX_ID_LEN + 1]; // 文件系统格式
@@ -971,7 +971,8 @@ typedef struct _BVCU_PUCFG_Storage_Media {
     unsigned int iTotalSpace;// 总空间。单位MB 
     unsigned int iFreeSpace; // 剩余空间。单位MB    
     int bFormated;// 是否已格式化，0-未格式化，1-已格式化
-    int iReserved[2];
+    int bDisable; // 是否禁用此磁盘存储文件。 可写
+    int iReserved[1];
 }BVCU_PUCFG_Storage_Media;
 
 // 存储规则 针对存储器
@@ -981,7 +982,11 @@ typedef struct _BVCU_PUCFG_Storage_Rule {
     int iReserveDays;// 录像文件保留天数
     int iRecordFileLength;// 录像文件时间长度。单位秒。
     int bRecordGPS;// 是否存储GPS信息。0-不存储，1-存储。
-    int iReserved[2];
+    int iVideoFileNameRule; // 音视频文件 命名规则，BVCU_FILE_STORAGE_NAME
+    int iPicFileNameRule;   // 图片文件 命名规则，BVCU_FILE_STORAGE_NAME
+    int iReserved[3];
+    char szVideoFileName[BVCU_MAX_FILE_NAME_LEN + 1]; // 自定义 音视频文件名
+    char szPicFileName[BVCU_MAX_FILE_NAME_LEN + 1];   // 自定义 图片文件名
 }BVCU_PUCFG_Storage_Rule;
 
 // 初始化存储器 针对存储器。管理器应定时查询格式化进度
@@ -1283,9 +1288,9 @@ typedef struct _BVCU_PUCFG_UserOperate
 
 typedef struct _BVCU_PUCFG_UploadConfig
 {
-    int snapshotAutoUpload;         // 拍照自动上传，默认上传，0：不上传，1：上传
-    int imptFileAutoUpload;         // 重点文件自动上传，默认上传，0：不上传，1：上传
-    int delUploadedFile;            // 上传后删除本地文件，默认不删除，0：不删除，1：删除
+    int snapshotAutoUpload;      // 拍照自动上传，0：不上传，1：上传
+    int iFileAutoUpload;         // 文件自动上传，0：不上传，1：上传重点文件，2：上传所有文件
+    int delUploadedFile;         // 上传后删除本地文件，默认不删除，0：不删除，1：删除
 }BVCU_PUCFG_UploadConfig;
 
 typedef struct _BVCU_PUCFG_Config
@@ -1293,5 +1298,29 @@ typedef struct _BVCU_PUCFG_Config
     char* pJsonSchema;         // 配置项模型，只读。 见：https://json-schema.apifox.cn  在线工具：https://app.quicktype.io/#l=schema
     char* pJsonConfig;         // 当前配置，可写。json字符串。
 }BVCU_PUCFG_Config;
+
+// 传感器数据
+typedef struct _BVCU_PUCFG_SensorData
+{
+    /* key值枚举(忽略大小写)：
+    * body_P        心率
+    * body_T        体温
+    * body_BP       血压
+    * body_RR       呼吸频率
+    * body_SpO2     血氧饱和度
+    * gas_O2        氧气
+    * gas_H2S       硫化氢
+    * gas_CO        一氧化碳
+    * gas_CO2       二氧化碳
+    * gas_CH4       甲烷
+    */
+    char  szKey[16];   // 数据类型，见上面说明。只读
+    char  szUnit[16];  // 单位字符串。只读
+    float iReading;    // 当前值。只读
+    float bAlarm;      // 是否正在报警，0：不在，1：报警中。只读
+    float iAlarmMin;   // 报警阈值 下线，低于该值报警。0：不报警。读写
+    float iAlarmMax;   // 报警阈值 上线, 高于该值报警。0：不报警。读写
+}BVCU_PUCFG_SensorData;
+
 #endif
 

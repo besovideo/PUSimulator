@@ -250,8 +250,7 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_PU_LIST = 0x00010,//CU从Server获取设备列表(不再推荐，请用SEARCH_LIST命令)。输入类型：无；输出类型: BVCU_PUCFG_PUChannelInfo数组
     BVCU_SUBMETHOD_PU_BROADCASTSTATUS,//获取广播的设备列表状态(一个Session只能同时有一个广播)。输入类型：无；输出类型：BVCU_BroadcastStatus数组
     BVCU_SUBMETHOD_PU_GPSDATA,//获取PU的GPS通道数据。输入类型：无；输出类型: BVCU_PUCFG_GPSData
-    BVCU_SUBMETHOD_PU_STORAGE_MEDIA, //获取某个存储器的分区信息。输入类型无; 输出类型：BVCU_PUCFG_Storage_Media数组
-    BVCU_SUBMETHOD_PU_GROUPLIST, // 获取设备分组列表。输入类型：无；输出类型：BVCU_PUCFG_GroupItem数组
+    BVCU_SUBMETHOD_PU_GROUPLIST = 20, // 获取设备分组列表。输入类型：无；输出类型：BVCU_PUCFG_GroupItem数组
     BVCU_SUBMETHOD_PU_GROUPINFO, // 获取设备分组信息。输入类型：BVCU_PUCFG_GroupItem；输出类型：BVCU_PUCFG_GroupInfo
     BVCU_SUBMETHOD_PU_UPDATESTATUS, //升级固件的状态。输入类型：无；输出类型：BVCU_PUCFG_UpdateStatus
     BVCU_SUBMETHOD_PU_POSITION, //基站、wifi定位信息。输入类型：无；输出类型：BVCU_PUCFG_Position
@@ -341,8 +340,9 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_PU_SERIALPORT,//串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
     BVCU_SUBMETHOD_PU_GPS,//GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
     BVCU_SUBMETHOD_PU_STORAGE_SCHEDULE, //存储计划。输入类型：BVCU_PUCFG_Storage_Schedule;输出类型：无
-    BVCU_SUBMETHOD_PU_STORAGE_RULE, //存储属性。输入类型：BVCU_PUCFG_Storage_Rule;输出类型：无    
-    BVCU_SUBMETHOD_PU_STORAGE_FORMAT,//初始化某个存储器。输入类型：BVCU_PUCFG_Storage_Format;输出类型：无  
+    BVCU_SUBMETHOD_PU_STORAGE_MEDIA = 0x13, // 设置某个存储器的分区信息。输入类型: BVCU_PUCFG_Storage_Media 数组; 输出类型：无
+    BVCU_SUBMETHOD_PU_STORAGE_RULE = 0x10011, //存储属性。输入类型：BVCU_PUCFG_Storage_Rule;输出类型：无
+    BVCU_SUBMETHOD_PU_STORAGE_FORMAT,//初始化某个存储器。输入类型：BVCU_PUCFG_Storage_Format;输出类型：无
     BVCU_SUBMETHOD_PU_ONLINECONTROL,//上下线控制。输入类型：BVCU_PUCFG_OnlineControl；输出类型：无
     BVCU_SUBMETHOD_PU_SNAPSHOTPARAM,//配置自动抓拍参数。输入类型：BVCU_PUCFG_SnapshotParam;输出类型：无
     BVCU_SUBMETHOD_PU_POWER,//配置电源参数。输入类型：BVCU_PUCFG_Power;输出类型：无
@@ -354,6 +354,7 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_PU_MISCHARDWARE,//设备外围硬件信息。输入类型：BVCU_PUCFG_MiscHardware数组;输出类型：无。查询时回复的是设备支持的所有硬件信息数组，设置时可以只是修改的硬件信息。
     BVCU_SUBMETHOD_PU_UPLOAD,   // 上传属性，输入类型：BVCU_PUCFG_UploadConfig;输出类型：无
     BVCU_SUBMETHOD_PU_CONFIG,   // 通用配置，输入类型：BVCU_PUCFG_Config。输出类型：无，
+    BVCU_SUBMETHOD_PU_SENSORDATA, // 传感器数据，输入类型：BVCU_PUCFG_SensorData数组。输出类型：无,
 
     //VTDU部分
     BVCU_SUBMETHOD_VTDU_INFO = 0x10F00,//VTDU信息。输入类型：BVCU_VTDUCFG_VTDUInfo；输出类型：无
@@ -468,7 +469,7 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     //存储文件部分---------------------------
     // BVCU_Search_FileFilter 中szDesc1，szDesc2作为修改字段，其余都作为过滤条件
     BVCU_SUBMETHOD_RECORDFILE_DESC_SET = 0x22630,  //设置文件记录的描述。输入类型：BVCU_Search_FileFilter，输出类型:无
-    BVCU_SUBMETHOD_RECORDFILE_DELETE,          //删除指定条件的文件记录以及文件。输入类型：BVCU_NRUCFG_DeleteFile，输出类型:BVCU_NRUCFG_DeleteFileResult
+    BVCU_SUBMETHOD_RECORDFILE_DELETE,          //删除指定条件的文件记录以及文件。输入类型：BVCU_NRUCFG_DeleteFileReq，输出类型:BVCU_NRUCFG_DeleteFileResult
 
     //事件联动部分---------------------------
     BVCU_SUBMETHOD_LINKACTION_ADD = 0x22700,//添加报警联动。输入类型：BVCU_Event_LinkAction;输出类型：无;
@@ -675,6 +676,14 @@ typedef enum _BVCU_FILE_STORAGE_TYPE {
     BVCU_FILE_STORAGE_MP4 = (1 << 1),      // MP4格式
     BVCU_FILE_STORAGE_AAC = (1 << 2),      // AAC格式，如果媒体方向有视频，库内部会自动选择MKV
 }BVCU_FILE_STORAGE_TYPE;
+// 文件名称格式
+typedef enum _BVCU_FILE_STORAGE_NAME {
+    // 可以同时指定多个文件格式，库内部自动做出调整
+    BVCU_FILE_STORAGE_NAME_DEFAULT = 0,    // 默认格式
+    BVCU_FILE_STORAGE_NAME_ID = (1 << 0),  // 设备ID
+    BVCU_FILE_STORAGE_NAME_NAME = (1 << 1),// 设备名称
+    BVCU_FILE_STORAGE_NAME_CUSTOM = (1 << 2), // 自定义字符串
+}BVCU_FILE_STORAGE_NAME;
 
 // 解码类型(软解/硬解), 目前支持SOFT、DXVA2
 typedef enum _BVCU_DECODE_TYPE {

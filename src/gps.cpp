@@ -10,7 +10,7 @@ CGPSChannel::CGPSChannel()
     m_position.bAntennaState = 1;
     m_position.bOrientationState = 1;
     m_position.iStarCount = 3;
-    m_position.iSatelliteSignal = BVCU_PUCFG_SATELLITE_GPS | BVCU_PUCFG_SATELLITE_BDS;
+    m_position.iSatelliteSignal = BVCU_PUCFG_SATELLITE_BDS;
 
     // 从配置文件中加载配置。
     PUConfig puconfig;

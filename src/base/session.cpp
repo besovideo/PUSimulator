@@ -32,6 +32,7 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     m_sesParam.iTimeOut = 8000;
     strncpy_s(m_sesParam.szClientID, ID, _TRUNCATE);
     strncpy_s(m_sesParam.szUserAgent, "PUSimulatorG1B2", _TRUNCATE);
+    //strncpy_s(m_sesParam.szUKeyID, "password_encrypted", _TRUNCATE);
     m_sesParam.iClientType = BVCSP_CLIENT_TYPE_PU;
     m_sesParam.OnCommand = OnCommand;
     m_sesParam.OnDialogCmd = OnDialogCmd;
@@ -204,6 +205,7 @@ int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* loca
     param.bUpload = 1;
     param.pLocalFilePathName = (char*)localFilePathName;
     param.pRemoteFilePathName = (char*)remoteFilePathName;
+    param.iFileStartOffset = -1;
     if (pFileTransfer->SetInfo(&param))
     {
         BVCSP_DialogParam cspParam;
@@ -318,6 +320,7 @@ int CPUSessionBase::Login(int through, int lat, int lng)
     m_sesParam.stEntityInfo.iOnlineThrough = through;
     m_sesParam.stEntityInfo.iLatitude = lat;
     m_sesParam.stEntityInfo.iLongitude = lng;
+    m_sesParam.iKeepaliveInterval = 25 * 1000;
     BVCU_Result bvResult = BVCSP_Login(&m_session, &m_sesParam);
     printf("Call BVCSP_login(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
         , m_deviceInfo.szID, bvResult, m_session);

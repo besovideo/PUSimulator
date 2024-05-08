@@ -616,6 +616,11 @@ extern "C" {
     */
     LIBBVCSP_API BVCU_Result BVCSP_SetLogCallback(BVCU_Log_Callback callBack, int level);
 
+    /**
+    * 获取当前库版本号
+    */
+    LIBBVCSP_API void BVCSP_GetVersion(char* buf, int bufsize);
+
     /*=======================login/logout============================================*/
     /*
     注意：登录完成后，应用程序随时可能收到BVCSP_EVENT_SESSION_CLOSE事件回调，

@@ -155,8 +155,10 @@ int Login(bool autoOption)
             pSession[i] = new CPUSession(puid, puconfig.relogin);
             if (pSession[i])
             {
-                if (puconfig.bUA != 0)
+                if (puconfig.bUA != 0) {
                     pSession[i]->SetUser(userID, "123");
+                    puconfig.protoType = 1; // UA 只支持TCP
+                }
                 // ==================  设置设备信息，需要开发者根据自己设备情况设置 =============== 
                 // ==================  设置设备信息，需要开发者根据自己设备情况设置 =============== 
                 // ==================  设置设备信息，需要开发者根据自己设备情况设置 =============== 
@@ -258,21 +260,19 @@ void UploadFile() {
 void UploadFile2() {
 
     memset(hFileTrans, 0x00, sizeof(hFileTrans));
-
-    int uploadcount = 0;
     time_t tnow = time(NULL);
     tm* pnow = localtime(&tnow);
     char nyr[32] = { 0 };
-    char sfm[32] = { 0 };
-    char remotefile[512] = { 0 };
     strftime(nyr, sizeof(nyr), "%Y%m%d", pnow);
-    strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
 
     if (pSession[0] != 0 && pSession[0]->BOnline()) {
         BVCU_PUCFG_DeviceInfo* info = pSession[0]->GetDeviceInfo();
+
+        char remotefile[512] = { 0 };
+        sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800_#800kV -+=.$^&()!@~`';500kV#2500kV500kV.mp4", info->szID, nyr, info->szID, nyr, "111111");
+
         for (int i = 0; i < concurrency; i++)
         {
-            sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
             BVCU_File_HTransfer hTransfer;
             int result = pSession[0]->UploadFile(&hTransfer, UPLOAD_FILE_PATH_NAME, remotefile);
             printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
