@@ -8,14 +8,14 @@
 //会议类型
 enum {
     //语音会议发言类型,占用4bit
-    BVCU_CONF_MODE_SPEAK_DISCUSSIONGROUP = (0<<0),//讨论组模式。自由发言，无需申请。可以多个人同时发言。
-    BVCU_CONF_MODE_SPEAK_CHAIRMAN = (1<<0), //演讲培训模式。发言者需申请，或者由chairman点名发言。同一时刻只能有一个人发言
+    BVCU_CONF_MODE_SPEAK_DISCUSSIONGROUP = (0 << 0),//讨论组模式。自由发言，无需申请。可以多个人同时发言。
+    BVCU_CONF_MODE_SPEAK_CHAIRMAN = (1 << 0), //演讲培训模式。发言者需申请，或者由chairman点名发言。同一时刻只能有一个人发言
     BVCU_CONF_MODE_SPEAK_PUBLIC = (2 << 0), //公众号模式。管理员发言是广播给所有人，普通发言者发言只有管理员能收到。
 
     //集群加入类型,占用3bit
-    BVCU_CONF_MODE_JOIN_INVITE = (0<<4),//不能主动加入。Opener拉人进来，被拉者可以接受或拒绝。
-    BVCU_CONF_MODE_JOIN_PASSWORD = (1<<4),//主动加入，但需要输入密码
-    BVCU_CONF_MODE_JOIN_FREE = (2<<4),//主动加入，不提示密码
+    BVCU_CONF_MODE_JOIN_INVITE = (0 << 4),//不能主动加入。Opener拉人进来，被拉者可以接受或拒绝。
+    BVCU_CONF_MODE_JOIN_PASSWORD = (1 << 4),//主动加入，但需要输入密码
+    BVCU_CONF_MODE_JOIN_FREE = (2 << 4),//主动加入，不提示密码
 
     //是否由服务器自动同意发言申请,占用1bit
     BVCU_CONF_MODE_APPLY_NEEDAGREE = (0 << 7),//需要管理员同意。演讲等模式时，会议成员申请发言权，需要会议管理员同意。
@@ -23,7 +23,7 @@ enum {
 
     //会议是否永远开始（自动开始，不准停止）,占用1bit
     BVCU_CONF_MODE_START_STOPADMIN = (0 << 8),//由会议管理员来开始，停止会议。
-    BVCU_CONF_MODE_START_FOREVER   = (1 << 8),//会议自动开始，并不允许停止。 只对 演讲模式生效。
+    BVCU_CONF_MODE_START_FOREVER = (1 << 8),//会议自动开始，并不允许停止。 只对 演讲模式生效。
 
     //会议是否自动开始平台录音（自动开始，不准停止）, 占用1bit
     BVCU_CONF_MODE_RECORD_STOPADMIN = (0 << 9),//由会议管理员来开始，停止会议。
@@ -43,16 +43,16 @@ enum {
 
 
 //会议状态
-enum{
+enum {
     BVCU_CONF_STATUS_STOPPED = 0,
     BVCU_CONF_STATUS_STARTED,
 };
 
 //participator的集群权限。集群创建者creator拥有所有权限
-enum{
+enum {
     // 一个集群必须至少有一个参与者有ADMIN权限。如果最后一个ADMIN退出集群，集群被自动删除。
-    BVCU_CONF_PARTICIPATOR_POWER_ADMIN = (1<<0),//集群管理。可打开/关闭会议、添加/删除集群成员等。
-    BVCU_CONF_PARTICIPATOR_POWER_MODETATOR = (1<<1),//发言管理。可允许/禁止某个成员发言
+    BVCU_CONF_PARTICIPATOR_POWER_ADMIN = (1 << 0),//集群管理。可打开/关闭会议、添加/删除集群成员等。
+    BVCU_CONF_PARTICIPATOR_POWER_MODETATOR = (1 << 1),//发言管理。可允许/禁止某个成员发言
 };
 
 //集群成员的会议状态
@@ -71,11 +71,11 @@ enum {
 };
 
 //集群基本信息
-typedef struct _BVCU_Conf_BaseInfo{
-    char szName[BVCU_MAX_NAME_LEN+1];//名字。必须设置为非空。
-    char szID[BVCU_MAX_ID_LEN+1];//集群ID。Create时保持为空，返回CMS设置的ID；其他命令必须设置
+typedef struct _BVCU_Conf_BaseInfo {
+    char szName[BVCU_MAX_NAME_LEN + 1];//名字。必须设置为非空。
+    char szID[BVCU_MAX_ID_LEN + 1];//集群ID。Create时保持为空，返回CMS设置的ID；其他命令必须设置
     int  iMode;//BVCU_CONF_MODE_*。必须设置
-    char szPassword[BVCU_MAX_PASSWORD_LEN+1];//密码，仅对BVCU_CONF_NODE_JOIN_PASSWORD和BVCU_SUBMETHOD_CONF_CREATE命令有意义，其他情况设置为空
+    char szPassword[BVCU_MAX_PASSWORD_LEN + 1];//密码，仅对BVCU_CONF_NODE_JOIN_PASSWORD和BVCU_SUBMETHOD_CONF_CREATE命令有意义，其他情况设置为空
     int  iConfStatus;//语音会议状态,BVCU_CONF_STATUS_*，只读
     int  iTimeOut;   //多长时间没有发言者，服务器自动删除集群。单位：秒。<= 0表示没有超时限制。创建集群时填写后不允许修改。
     int  iRecordStatus;//平台对会议录音状态，0：不在录音；1：在录音。只读
@@ -84,15 +84,15 @@ typedef struct _BVCU_Conf_BaseInfo{
 
 
 //集群成员
-typedef struct _BVCU_Conf_Participator_Info{
-    char szID[BVCU_MAX_ID_LEN+1];//participator ID。通常是PU/CU ID
-    char szUserName[BVCU_MAX_NAME_LEN+1];//登录用户名，目前仅对CU有意义
-    char szAddr[BVCU_MAX_HOST_NAME_LEN+1];//地址信息，CU必须设置。PU可选
+typedef struct _BVCU_Conf_Participator_Info {
+    char szID[BVCU_MAX_ID_LEN + 1];//participator ID。通常是PU/CU ID
+    char szUserName[BVCU_MAX_NAME_LEN + 1];//登录用户名，目前仅对CU有意义
+    char szAddr[BVCU_MAX_HOST_NAME_LEN + 1];//地址信息，CU必须设置。PU可选
     char szMemberName[BVCU_MAX_NAME_LEN + 1];//成员名称。根据成员是用户还是设备，返回 用户名/设备名称。 只读。
-    char szAliasName[BVCU_MAX_NAME_LEN+1];//集群中使用的别名。可以为空。仅在BVCU_SUBMETHOD_CONF_PARTICIPATOR_INFO和CMS返回中填充
+    char szAliasName[BVCU_MAX_NAME_LEN + 1];//集群中使用的别名。可以为空。仅在BVCU_SUBMETHOD_CONF_PARTICIPATOR_INFO和CMS返回中填充
     int  iApplierID;//CMS分配的用户标识。添加CU参与者时(BVCU_SUBMETHOD_CONF_PARTICIPATOR_ADD),必须设置该值。其他情况下设置为无效值，应设置为0
     int  iPID;//用户加入或被加入集群时，CMS分配给该成员的成员ID，仅对该集群有效。-1表示无效值。
-                //CU participator应保存该值，在断线重连等异常情况下，继续会议使用RETURN命令时，CMS根据登录用户名和iPID的组合来确定该用户继续会议。
+    //CU participator应保存该值，在断线重连等异常情况下，继续会议使用RETURN命令时，CMS根据登录用户名和iPID的组合来确定该用户继续会议。
     int  iAllowedMediaDir;//BVCU_MEDIADIR_*。仅对CONF_PARTICIPATOR_ADD/MODIFY命令有意义，其他命令无意义
     int  iStatus;//当前语音会议状态。BVCU_CONF_PARTICIPATOR_STATUS_*。由CMS填充为有意义的值。CU必须填写为BVCU_CONF_PARTICIPATOR_STATUS_UNKNOWN
     int  iPower;//权限，BVCU_CONF_PARTICIPATOR_POWER_*。作为control命令输入时，只有BVCU_CONF_PARTICIPATOR_POWER_ADMIN权限者的设置值起作用。
@@ -104,13 +104,13 @@ typedef struct _BVCU_Conf_Participator_Info{
 
 #define BVCU_CONF_MAX_PARTICIPATOR_ONETIME 1024 //一次CONF_PARTICIPATOR_ADD/REMOVE命令允许添加的集群成员最大数目
 //CMS对"添加集群成员”命令处理结果
-typedef struct _BVCU_Conf_Participator_AddResult{
-    int iResultBits[BVCU_CONF_MAX_PARTICIPATOR_ONETIME/32];//按照BVCU_SUBMETHOD_CONF_PARTICIPATOR_ADD命令中数组顺序，
+typedef struct _BVCU_Conf_Participator_AddResult {
+    int iResultBits[BVCU_CONF_MAX_PARTICIPATOR_ONETIME / 32];//按照BVCU_SUBMETHOD_CONF_PARTICIPATOR_ADD命令中数组顺序，
     //成功添加的位设置为1，失败的位设置为0。数组顺序i=>bit位映射关系：第[i/32]个int的[31-(i&31)]位
 }BVCU_Conf_Participator_AddResult;
 
 //集群信息
-typedef struct _BVCU_Conf_Info{
+typedef struct _BVCU_Conf_Info {
     BVCU_Conf_BaseInfo baseInfo;//集群基本信息
     int iParticipatorCount;//集群成员个数
     BVCU_Conf_Participator_Info* pParticipators;//集群成员列表
@@ -119,9 +119,9 @@ typedef struct _BVCU_Conf_Info{
 }BVCU_Conf_Info;
 
 //申请加入集群
-typedef struct _BVCU_Conf_Participator_Join{
-    char szPassword[BVCU_MAX_PASSWORD_LEN+1];//密码，仅对BVCU_CONF_NODE_JOIN_PASSWORD和BVCU_SUBMETHOD_CONF_CREATE命令有意义，其他情况设置为空
-    char szAliasName[BVCU_MAX_NAME_LEN+1];//集群中使用的别名。可以为空。
+typedef struct _BVCU_Conf_Participator_Join {
+    char szPassword[BVCU_MAX_PASSWORD_LEN + 1];//密码，仅对BVCU_CONF_NODE_JOIN_PASSWORD和BVCU_SUBMETHOD_CONF_CREATE命令有意义，其他情况设置为空
+    char szAliasName[BVCU_MAX_NAME_LEN + 1];//集群中使用的别名。可以为空。
 }BVCU_Conf_Participator_Join;
 
 //邀请加入集群
@@ -129,7 +129,7 @@ typedef struct _BVCU_Conf_Participator_Invite {
     char szID[BVCU_MAX_ID_LEN + 1];//participator ID。通常是PU/CU ID
     char szUserName[BVCU_MAX_NAME_LEN + 1];//登录用户名，目前仅对CU有意义。PU为PU的Name
     int  iPID;//用户加入或被加入集群时，CMS分配给该成员的成员ID，仅对该集群有效。-1表示无效值。
-              //应保存该值，在断线重连等异常情况下，继续参加语音会议使用RETURN命令时，CMS根据登录用户名和iPID的组合来确定该用户继续会议。
+    //应保存该值，在断线重连等异常情况下，继续参加语音会议使用RETURN命令时，CMS根据登录用户名和iPID的组合来确定该用户继续会议。
 }BVCU_Conf_Participator_Invite;
 /*================================================================*/
 
@@ -172,20 +172,20 @@ enum
 };
 enum
 {
-    BVCU_IM_NOTIFY_ATTR_SYSTEM = (1 << 0),   // 系统提醒。
-    BVCU_IM_NOTIFY_ATTR_CONF   = (1 << 1),   // 只提醒在参加语音会议的成员；群消息有效。
-    BVCU_IM_NOTIFY_ATTR_SHOW   = (1 << 2),   // 在聊天框中显示。
-    BVCU_IM_NOTIFY_ATTR_LOOP   = (1 << 3),   // 循环播放提醒音。
+    BVCU_IM_NOTIFY_ATTR_SYSTEM = (1 << 0), // 系统提醒。
+    BVCU_IM_NOTIFY_ATTR_CONF = (1 << 1),   // 只提醒在参加语音会议的成员；群消息有效。
+    BVCU_IM_NOTIFY_ATTR_SHOW = (1 << 2),   // 在聊天框中显示。
+    BVCU_IM_NOTIFY_ATTR_LOOP = (1 << 3),   // 循环播放提醒音。
 };
 enum
 {
-    BVCU_IM_CTRL_REPLY   = (1 << 0),    // 回复消息。CTRL消息和回复的消息组合发送。
-    BVCU_IM_CTRL_RETRACT = (1 << 1),    // 撤回消息。
+    BVCU_IM_CTRL_REPLY = (1 << 0),    // 回复消息。CTRL消息和回复的消息组合发送。
+    BVCU_IM_CTRL_RETRACT = (1 << 1),  // 撤回消息。
 };
 
 typedef struct _BVCU_IM_AV_CALL
 {
-    char szCallID[BVCU_MAX_ID_LEN + 1];// 音视频通话ID标识，通过BVCU_Search_FileFilter.szDesc1可以检索通话相关音视频记录。
+    char szCallID[BVCU_MAX_ID_LEN + 1];// 音视频通话ID标识，用于检索通话相关音视频记录。
     int  iState;                       // 音视频通话结果状态。见BVCU_AVCALL_STATE_*，BVCU_AVCALL_STATE_ALREADY_ANSWER时通话时长有意义。
     unsigned int iDuration;            // 通话时长，单位，秒
     char szApplyerUserID[BVCU_MAX_ID_LEN + 1]; // 通话请求发起者账号。
@@ -230,6 +230,35 @@ typedef struct _BVCU_IM_Msg_ {
     }stMsg;
     BVCU_WallTime stSendTime; //消息发送时间,UTC时间。消息发送者不需要填写（清零），以服务器接收到消息时间算。
 } BVCU_IM_Msg;
+
+// 音视频通话状态
+enum {
+    BVCU_AVCALL_CODE_Unknown = 0,   // 未知
+    BVCU_AVCALL_CODE_Call,          // 呼叫
+    BVCU_AVCALL_CODE_Ringing,       // 响铃中
+    BVCU_AVCALL_CODE_Answer,        // 接听
+    BVCU_AVCALL_CODE_Connecting,    // 连接中
+    BVCU_AVCALL_CODE_Talking,       // 通话中
+    BVCU_AVCALL_CODE_Bye,           // 挂断
+    BVCU_AVCALL_CODE_Reject,        // 拒接
+    BVCU_AVCALL_CODE_Busy,          // 占线
+    BVCU_AVCALL_CODE_Unsupported,   // 不支持
+    BVCU_AVCALL_CODE_Network,       // 网络错误
+};
+typedef struct _BVCU_IM_AVCALL_ {
+    // 以下字段请求时填, 回复时不用填(服务器填充).
+    char szCallID[BVCU_MAX_ID_NAME_LEN + 1];// 音视频通话ID标识(请求者生成,全局唯一,字母+数字), 用于挂断通话和生成聊天记录(由发起者生成记录).
+    char szID[BVCU_MAX_ID_NAME_LEN + 1];    // 通话对方ID（PU_ID,UA_ID,CU_ID).
+    char szUser[BVCU_MAX_ID_NAME_LEN + 1];  // 通话对方用户账号, PU为空.
+    // 以下字段请求和回复都不用填
+    char szName[BVCU_MAX_ID_NAME_LEN + 1];  // 通话对方名称, 设备名/用户名.
+    // 以下字段请求和回复时都要填.
+    int  iChannelIndex; // 通话对方通道号.
+    int  iStreamDir;    // 通话对方数据流方向.
+    int  iCode;         // 状态码. 见 BVCU_AVCALL_CODE_*
+    int  iReserved[3];  // 64位对齐，保留，填0
+} BVCU_IM_AVCall;
+
 /*================================================================*/
 
 #endif

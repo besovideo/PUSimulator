@@ -464,7 +464,9 @@ typedef enum _BVCU_SUBMETHOD_TYPE {
     BVCU_SUBMETHOD_CONF_VISITOR_JOIN,   //请求旁听语音会议。输入类型：无；输出类型：BVCU_Conf_Participator_Info。BVCU_Command.iTargetIndex==1表示多组同时监听。
     BVCU_SUBMETHOD_CONF_PARTICIPATOR_INVITE_JOIN,   //邀请参加语音会议，输入类型：BVCU_Conf_Participator_Invite；输出类型：无，BVCU_Command.iTargetIndex==1表示多组同时监听。
     BVCU_SUBMETHOD_CONF_PARTICIPATOR_KICKOUT,       //踢出语音会议（区别删除集群成员，这里是离开正在进行的语音会议），输入类型：BVCU_Conf_Participator_Invite；输出类型：无
+
     BVCU_SUBMETHOD_IM_MSG = 0x22620, // 发送即时消息。输入类型：BVCU_IM_Msg数组 输出类型：BVCU_IM_Msg数组，用于获取各消息ID。消息接收方收到同名Notify。
+    BVCU_SUBMETHOD_IM_AVCALL, // 音视频通话请求。输入类型：BVCU_IM_AVCall 输出类型：BVCU_IM_AVCall。
 
     //存储文件部分---------------------------
     // BVCU_Search_FileFilter 中szDesc1，szDesc2作为修改字段，其余都作为过滤条件

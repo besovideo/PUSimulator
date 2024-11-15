@@ -114,6 +114,8 @@ typedef struct _BVCU_Event_Source
     int iLatitude;                          // 纬度，北纬是正值，南纬是负值，单位1/10000000度
     char szKey[BVCU_MAX_ID_NAME_LEN + 1];   // 报警唯一ID，用于追踪（处理）报警。报警者生产（需要全局唯一）。
     char szPayload[512];                    // 报警负载, 数据格式: json
+    char szUserName[BVCU_MAX_ID_NAME_LEN + 1]; // 用户名称。收到报警时有效
+    char szDevName[BVCU_MAX_ID_NAME_LEN + 1]; // 设备名称。收到报警时有效
 } BVCU_Event_Source;
 
 //客户端查询返回的存储的事件。CU可以修改其中的处警部分

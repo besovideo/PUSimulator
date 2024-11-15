@@ -1,7 +1,7 @@
 #ifndef __BVCU_COMMON_H__
 #define __BVCU_COMMON_H__
 #include <BVCUConst.h>
-typedef struct _BVCU_ImageSize{
+typedef struct _BVCU_ImageSize {
     int iWidth;
     int iHeight;
 }BVCU_ImageSize;
@@ -11,12 +11,12 @@ typedef struct _BVCU_RelativeSize {
     float fHeight;      //相对高度，0.0001 ~ 1
 }BVCU_RelativeSize;
 
-typedef struct _BVCU_ImagePos{
+typedef struct _BVCU_ImagePos {
     int iLeft;
     int iTop;
 }BVCU_ImagePos;
 
-typedef struct _BVCU_ImageRect{
+typedef struct _BVCU_ImageRect {
     int iLeft;
     int iTop;
     int iWidth;
@@ -39,7 +39,7 @@ typedef struct _BVCU_WallDate {
 }BVCU_WallDate;
 
 //一天中的一个时间片
-typedef struct _BVCU_DayTimeSlice{
+typedef struct _BVCU_DayTimeSlice {
     char cHourBegin, cMinuteBegin, cSecondBegin;
     char cHourEnd, cMinuteEnd, cSecondEnd;
     char cReserved[2];//对齐
@@ -47,10 +47,10 @@ typedef struct _BVCU_DayTimeSlice{
 //注意：所有BVCU_DayTimeSlice stWeek[7][...]等表示一周中的时间片，stWeek[0]表示周日，stWeek[1]表示周一,...stWeek[6]表示周六
 
 //墙上时间
-typedef struct _BVCU_WallTime{
-    short iYear; 
-    char  iMonth; 
-    char  iDay; 
+typedef struct _BVCU_WallTime {
+    short iYear;
+    char  iMonth;
+    char  iDay;
     char  iHour;
     char  iMinute;
     char  iSecond;
@@ -58,7 +58,7 @@ typedef struct _BVCU_WallTime{
 }BVCU_WallTime;
 
 //视频制式
-typedef struct _BVCU_VideoFormat{
+typedef struct _BVCU_VideoFormat {
     int iVideoFormat;//BVCU_VIDEOFORMAT_*。只读
     BVCU_ImageSize stImageSize[8];//该制式支持的图像分辨率。只读
     int iFPSMax[8];//不同分辨率对应的最大采样帧率。单位1/1000帧。例如25fps，需要设置为25*1000。只读
@@ -116,7 +116,7 @@ typedef struct _BVCU_ENCFG_Progress_
     int  iUploadRate;     // 当前上传速度。单位：KBit/s
     int  iDownloadRate;   // 当前下载速度。单位：KBit/s
 }BVCU_ENCFG_Progress;
-typedef struct _BVCU_ENCFG_SystemInfo_ 
+typedef struct _BVCU_ENCFG_SystemInfo_
 {
     char szSystemName[BVCU_MAX_NAME_LEN + 1]; // 带有位数、版本信息的系统名称。如："windows 10 教育版 64位"
     char szCPUInfo[BVCU_MAX_NAME_LEN + 1]; // CPU信息。
@@ -132,8 +132,8 @@ typedef struct _BVCU_CTRL_RTSP_
     // 命令回复时，以下参数要根据实际执行结果正确填写。
     void* hDialog; //会话的句柄。如：BVCU_HDialog
     char  szCmdType[16]; // "PLAY"、"PAUSE"、"TEARDOWN"。注意字母大写。
-    int   iRange_npt_begin; // 指定播放开始位置。相对于文件开始位置的毫秒。-1：表示当前播放位置。
-    int   iRange_npt_end;// 指定播放结束位置。相对于文件开始位置的毫秒。-1：表示播放到文件结束。
+    int   iRange_npt_begin; // 指定播放开始位置。相对于文件开始位置的秒。-1：表示当前播放位置。
+    int   iRange_npt_end;// 指定播放结束位置。相对于文件开始位置的秒。-1：表示播放到文件结束。
     int   iScale;        // 指定播放速度。单位1/100倍。例如：25,50,100,200,400分别对应0.25，0.5，1，2，4倍数。-1：不改变速度。
 
     int   iReserved[3];  // 保留，对齐。内部有使用，不要更改。

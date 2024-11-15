@@ -19,13 +19,17 @@
 #endif // _MSC_VER
 
 #define UPLOAD_FILE_PATH_NAME "./uploadfile.mp4"
+#define FILE_TRANS_INTERVAL 5 // 秒
 
 static CPUSession* pSession[1024] = { 0,0,0,0 };  // 全局Session
 static bool needOnline = false; // 是否需要在线，调用login和logout时修改
 static int concurrency = 100; // 并发请求数
+
+static bool fileTransContinue = false;    // 文件传输结束后继续传输
 static CMyFileTrans fileTransManager; // 文件传输
 static BVCU_File_HTransfer hFileTrans[1024] = { 0,0,0,0 };  // 全局文件传输状态
 static int hFileStatus[1024] = { 0,0,0,0 };  // 全局文件传输状态
+static time_t iFileTimes[1024] = { 0,0,0,0 }; // 全局文件传输结束时间，用于延迟继续传输
 
 // BVCSP日志回调
 void Log_Callback(int level, const char* log)
@@ -38,12 +42,13 @@ void  File_OnEvent(BVCU_File_HTransfer hTransfer, void* pUserData, int iEventCod
     for (int i = 0; i < sizeof(hFileTrans) / sizeof(hFileTrans[0]); i++) {
         if (hFileTrans[i] == hTransfer) {
             hFileStatus[i] = iResult;
+            iFileTimes[i] = time(NULL);
         }
     }
 }
 
 static bool bRun = true;
-static char cmdType = 0;
+static char cmdType[2] = { 0,0 };
 static time_t lastPrintTime = 0;
 // 用来定时 读取音视频、GPS、串口数据，并发送。
 unsigned __stdcall Wall_App(void*)
@@ -58,46 +63,55 @@ unsigned __stdcall Wall_App(void*)
     // 开始认证
     Auth();
 
+    time_t exitTime = 0; // 延迟退出
     while (true)
     {
-        if (!bRun) // 退出程序，等待登录退出。
-            Logout();
-        int busy = HandleEvent();
+        if (!bRun) { // 退出程序，等待登录退出。
+            if (exitTime == 0) {
+                Logout();
+                exitTime = time(NULL);
+            }
+        }
+        HandleEvent();
         BVCSP_HandleEvent();
 
-        if (!bRun && busy == 0) // 已全部退出
+        if (!bRun && (time(NULL) - exitTime) > 5) // 已全部退出
             break;
 
-        if (cmdType == 'i')
+        if (cmdType[0] == 'i')
         {
             Login(false);
         }
-        else if (cmdType == 'o')
+        else if (cmdType[0] == 'o')
         {
             Logout();
         }
-        else if (cmdType == 'a')
+        else if (cmdType[0] == 'a')
         {
             SendAlarm();
         }
-        else if (cmdType == 'c')
+        else if (cmdType[0] == 'c')
         {
             SendCommand();
         }
-        else if (cmdType == 'f')
+        else if (cmdType[0] == 'f')
         {
-            UploadFile();
+            if (cmdType[1] == 'f')
+                UploadFile1(true);
+            else
+                UploadFile1(false);
         }
-        else if (cmdType == 'F')
+        else if (cmdType[0] == 'F')
         {
             UploadFile2();
         }
-        cmdType = 0;
+        cmdType[0] = 0;
+        cmdType[1] = 0;
     }
 
     Logout();
     BVCSP_Finish();
-    cmdType = '\n';
+    cmdType[0] = '\n';
     return 0;
 }
 
@@ -109,18 +123,19 @@ int main()
     while (1)
     {
         char cmd[128] = { 0 };
-        printf("            e :exit  i :login  o :logout  a :alarm c :command f :file F :file2 \n");
+        printf("            e :exit  i :login  o :logout  a :alarm c :command f :多文件并发 F :单文件并发 ff :持续多文件 \n");
         gets_s(cmd);
         //printf("============= %s ==============\n", cmd);
-        cmdType = cmd[0];
-        if (cmdType == 'e')
+        cmdType[0] = cmd[0];
+        cmdType[1] = cmd[1];
+        if (cmdType[0] == 'e')
             break;
 
         lastPrintTime = 0;
     }
     bRun = false;
     for (int i = 0; i < 1000; i++) {
-        if (cmdType == '\n')
+        if (cmdType[0] == '\n')
             break;
         Sleep(100); // 等待Wall_App线程退出。
     }
@@ -225,39 +240,55 @@ int SendCommand()
     return -1;
 }
 
+bool UploadFile(int index) {
+    if (pSession[index] != 0) {
+        if (pSession[index]->BOnline()) {
+            time_t tnow = time(NULL);
+            tm* pnow = localtime(&tnow);
+            char nyr[32] = { 0 };
+            char sfm[32] = { 0 };
+            char remotefile[512] = { 0 };
+            strftime(nyr, sizeof(nyr), "%Y%m%d", pnow);
+            strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
+
+            BVCU_PUCFG_DeviceInfo* info = pSession[index]->GetDeviceInfo();
+            sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
+            BVCU_File_HTransfer hTransfer;
+            int result = pSession[index]->UploadFile(&hTransfer, UPLOAD_FILE_PATH_NAME, remotefile);
+            printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
+            hFileTrans[index] = hTransfer;
+            hFileStatus[index] = result;
+            iFileTimes[index] = time(NULL);
+            return true;
+        }
+    }
+    return false;
+}
 // 上传文件，测试多个设备并发上传不同文件
-void UploadFile() {
+void UploadFile1(bool bContinue) {
+    if (bContinue) {
+        if (fileTransContinue) {
+            fileTransContinue = false;
+            return;
+        }
+        fileTransContinue = true;
+    }
+    else
+        fileTransContinue = false;
 
     memset(hFileTrans, 0x00, sizeof(hFileTrans));
 
     int uploadcount = 0;
-    time_t tnow = time(NULL);
-    tm* pnow = localtime(&tnow);
-    char nyr[32] = { 0 };
-    char sfm[32] = { 0 };
-    char remotefile[512] = { 0 };
-    strftime(nyr, sizeof(nyr), "%Y%m%d", pnow);
-    strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
-
-    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]); i++)
+    for (int i = 0; i < sizeof(pSession) / sizeof(pSession[0]) && uploadcount <= concurrency; i++)
     {
-        if (pSession[i] != 0) {
-            if (pSession[i]->BOnline() && uploadcount < concurrency) {
-                uploadcount++;
-                BVCU_PUCFG_DeviceInfo* info = pSession[i]->GetDeviceInfo();
-                sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
-                BVCU_File_HTransfer hTransfer;
-                int result = pSession[i]->UploadFile(&hTransfer, UPLOAD_FILE_PATH_NAME, remotefile);
-                printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
-                hFileTrans[i] = hTransfer;
-                hFileStatus[i] = result;
-            }
-        }
+        if (UploadFile(i))
+            uploadcount++;
     }
 }
 
 // 上传文件，测试同一个设备并发上传同一个文件
 void UploadFile2() {
+    fileTransContinue = false;
 
     memset(hFileTrans, 0x00, sizeof(hFileTrans));
     time_t tnow = time(NULL);
@@ -278,6 +309,7 @@ void UploadFile2() {
             printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
             hFileTrans[i] = hTransfer;
             hFileStatus[i] = result;
+            iFileTimes[i] = time(NULL);
         }
     }
 }
@@ -327,11 +359,16 @@ int HandleEvent()
             if (filetrans != NULL) {
                 ftrans++;
             }
-            else if (hFileStatus[i] != 0) {
-                ffail++;
-            }
             else {
-                fok++;
+                if (hFileStatus[i] != 0) {
+                    ffail++;
+                }
+                else {
+                    fok++;
+                }
+                if ((nowTime - iFileTimes[i]) > FILE_TRANS_INTERVAL && fileTransContinue) {
+                    UploadFile(i);
+                }
             }
         }
     }

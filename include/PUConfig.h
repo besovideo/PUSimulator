@@ -26,7 +26,7 @@ typedef struct _BVCU_PUCFG_DeviceInfo {
     int  iPUType;          // BVCU_PUTYPE_*
     int  iLanguage[BVCU_MAX_LANGGUAGE_COUNT];    // 支持的语言列表。BVCU_LANGUAGE_*
     int  iLanguageIndex;  // 当前使用的语言索引。可写
-    char szName[BVCU_MAX_NAME_LEN + 1];// 名字。可写
+    char szName[BVCU_MAX_FILE_NAME_LEN + 1];// 名字。可写
     int  iWIFICount;      // WIFI数目
     int  iRadioCount;     // 无线模块数目
     int  iChannelCount;   // 音视频通道数
@@ -1166,11 +1166,11 @@ typedef struct _BVCU_PUCFG_ZFYInfo
     char szIMEI_MEID[BVCU_MAX_ID_LEN + 1];    // 设备IMEI/MEID号.  只读
     char szSerial[BVCU_MAX_ID_LEN + 1];       // 产品序号，不可为空. 可写
     char szUserNo[BVCU_MAX_ID_LEN + 1];       // 使用者警号，不可为空。可写
-    char szUserName[BVCU_MAX_ID_LEN + 1];     // 使用者姓名。可写
-    char szUserDescribe[BVCU_MAX_ID_LEN + 1]; // 使用者描述。 可写
-    char szUnitNo[BVCU_MAX_ID_LEN + 1];       // 使用者单位编号。 可写
-    char szUnitName[BVCU_MAX_ID_LEN + 1];     // 使用者单位名称。 可写
-    char szPostName[BVCU_MAX_ID_LEN + 1];     // 使用者岗位/职位名称。 可写
+    char szUserName[BVCU_MAX_FILE_NAME_LEN + 1];     // 使用者姓名。可写
+    char szUserDescribe[BVCU_MAX_FILE_NAME_LEN + 1]; // 使用者描述。 可写
+    char szUnitNo[BVCU_MAX_FILE_NAME_LEN + 1];       // 使用者单位编号。 可写
+    char szUnitName[BVCU_MAX_FILE_NAME_LEN + 1];     // 使用者单位名称。 可写
+    char szPostName[BVCU_MAX_FILE_NAME_LEN + 1];     // 使用者岗位/职位名称。 可写
     int  iPoliceType;  // 警员类型，见  BVCU_POLICETYPE_*。可写
     char szDefaultConference[BVCU_MAX_ID_LEN + 1];// 默认发言会议ID。注意可以通过BVCU_SUBMETHOD_CONF_LIST命令获取会议名称，并显示选择会议列表。 可写
     char szCurrentConference[BVCU_MAX_ID_LEN + 1];// 当前发言会议ID。 只读
