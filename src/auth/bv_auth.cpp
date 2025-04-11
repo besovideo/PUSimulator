@@ -4,11 +4,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "../utils.h"
 
 #ifdef _MSC_VER
 #include <io.h>
 #include <direct.h>
 #else
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/sysinfo.h>
@@ -55,7 +58,7 @@ static void mOnAuthEvent(
      issuer: %s                   \n\
      type: %s                     \n\
      id: %s                       \n\
-     user_data: %d                \n\
+     user_data: %lld                \n\
      errstr: %s                   \n\
      ProductKey: %s               \n\
      ProductKey state: %d         \n\
@@ -71,7 +74,7 @@ static void mOnAuthEvent(
         param->certInfo.IssueUser,
         param->termInfo.Type,
         param->termInfo.ID,
-        (int)param->user_data,
+        (long long)param->user_data,
         param->innerInfo.errstr,
         param->proKeyInfo.ProductKey,
         param->proKeyInfo.State,

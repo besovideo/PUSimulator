@@ -1,4 +1,7 @@
 ﻿#include <string>
+#include <cstdlib>
+#include <stdio.h>
+#include "utils.h"
 #include "gps.h"
 #include "config.h"
 

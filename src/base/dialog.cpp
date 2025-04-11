@@ -1,5 +1,7 @@
 ﻿
 #include <string>
+#include <cstring>
+#include "../utils.h"
 #include "dialog.h"
 #include "session.h"
 

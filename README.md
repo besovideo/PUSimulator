@@ -12,15 +12,26 @@ build   sln工程文件/编译临时文件 目录
 include BVCSP库相关头文件 目录
 lib     BVCSP库相关dll/lib 目录
 src     模拟器源码 目录
+linux   linux下编译以及相关lib/头文件 目录
 ```
 > 正常情况下，您只需根据情况修改src里的代码，不需要修改src中子目录里的代码，他们是对bvcsp接口的封装。
 
-### 编译说明
+### Linux编译说明
+
+通过linux目录下makefile编译，生成可执行文件PUSimulator。
+> 注意：编译前，请先准备好libBVCSP.so及其依赖库。
+在make命令中传入需要进行编译的linux平台，例如 make OS=x86。
+
+### Linux运行
+
+将可执行文件PUSimulator与相关依赖库拷贝至对应linux系统中运行。
+
+### Windows编译说明
 
 项目是Windows Visual Studio 2010项目，推荐使用Visual Studio 2010编译。  
 项目工程文件在build目录中。  
 
-### 运行
+### Windows运行
 
 1. 修改bin目录下pusimulator.ini配置文件。重点：id（设备ID号）ip（上线服务器地址） port（上线服务器端口）
 2. 自动拷贝文件运行：直接双击bin目录下的run.bat运行。  

@@ -1,5 +1,7 @@
 ﻿#include <string>
 #include <stdio.h>
+#include <sys/file.h>
+#include "utils.h"
 #include "file.h"
 
 FILE* CMyFileTrans::bv_fsopen(const char* pathName, const char* mode, int bWrite)

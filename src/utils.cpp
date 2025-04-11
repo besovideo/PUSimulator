@@ -1,4 +1,7 @@
 #include "utils.h"
+#include <cstdlib>
+#include <stdio.h>
+#include <iconv.h>
 #ifdef _MSC_VER
 #include <winsock2.h>
 #include <Windows.h>
@@ -177,4 +180,43 @@ int AnsiToUtf8(char* _dir, int _len, const char* _src)
 #endif
     return TRUE;
 }
+
+#ifdef __linux__
+char* strfcpy(char* dst, size_t siz, const char* src, size_t max_count)
+{
+    char* d = dst;
+    const char* s = src;
+    size_t count = 0;
+
+    while (count < (siz - 1) && count < max_count && *s)
+    {
+        *d++ = *s++;
+        ++count;
+    }
+
+    if (siz > 0)
+        *d = '\0';
+    return dst;
+}
+
+int GetTickCount()
+{
+    static int g_GetTickCount_t = 0;
+    static timespec g_GetTickCount_ts = { 0,0 };
+
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if ((ts.tv_nsec - g_GetTickCount_ts.tv_nsec) > 10 * 1000000 || !g_GetTickCount_t || (ts.tv_sec > g_GetTickCount_ts.tv_sec))
+    {
+        int a, b;
+        a = ts.tv_sec << 3;
+        a *= 125;
+        b = ts.tv_nsec >> 6;
+        b /= 15625;
+        g_GetTickCount_t = a + b;
+        g_GetTickCount_ts = ts;
+    }
+    return g_GetTickCount_t;
+}
+#endif
 

@@ -1,6 +1,7 @@
 ﻿#include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "../utils.h"
 #include "session.h"
 
 #ifdef _MSC_VER
@@ -10,11 +11,11 @@
 CPUSessionBase::CPUSessionBase(const char* ID)
 {
     memset(&m_deviceInfo, 0x00, sizeof(m_deviceInfo));
-    strncpy_s(m_deviceInfo.szID, ID, _TRUNCATE);
-    strncpy_s(m_deviceInfo.szManufacturer, "simulator", _TRUNCATE);
-    strncpy_s(m_deviceInfo.szProductName, "PUSimulator G1B2", _TRUNCATE);
-    strncpy_s(m_deviceInfo.szSoftwareVersion, "0.0.1", _TRUNCATE);
-    strncpy_s(m_deviceInfo.szHardwareVersion, "0.0.1", _TRUNCATE);
+    strncpy_s(m_deviceInfo.szID, sizeof(m_deviceInfo.szID), ID, _TRUNCATE);
+    strncpy_s(m_deviceInfo.szManufacturer, sizeof(m_deviceInfo.szManufacturer), "simulator", _TRUNCATE);
+    strncpy_s(m_deviceInfo.szProductName, sizeof(m_deviceInfo.szProductName), "PUSimulator G1B2", _TRUNCATE);
+    strncpy_s(m_deviceInfo.szSoftwareVersion, sizeof(m_deviceInfo.szSoftwareVersion), "0.0.1", _TRUNCATE);
+    strncpy_s(m_deviceInfo.szHardwareVersion, sizeof(m_deviceInfo.szHardwareVersion), "0.0.1", _TRUNCATE);
     // 默认设置无效的经纬度地址。
     m_deviceInfo.iLatitude = 200 * 10000000;
     m_deviceInfo.iLongitude = 200 * 10000000;
@@ -30,9 +31,9 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     memset(&m_sesParam, 0x00, sizeof(m_sesParam));
     m_sesParam.iSize = sizeof(m_sesParam);
     m_sesParam.iTimeOut = 8000;
-    strncpy_s(m_sesParam.szClientID, ID, _TRUNCATE);
-    strncpy_s(m_sesParam.szUserAgent, "PUSimulatorG1B2", _TRUNCATE);
-    //strncpy_s(m_sesParam.szUKeyID, "password_encrypted", _TRUNCATE);
+    strncpy_s(m_sesParam.szClientID, sizeof(m_sesParam.szClientID), ID, _TRUNCATE);
+    strncpy_s(m_sesParam.szUserAgent, sizeof(m_sesParam.szUserAgent), "PUSimulatorG1B2", _TRUNCATE);
+    //strncpy_s(m_sesParam.szUKeyID, sizeof(m_sesParam.szUKeyID), "password_encrypted", _TRUNCATE);
     m_sesParam.iClientType = BVCSP_CLIENT_TYPE_PU;
     m_sesParam.OnCommand = OnCommand;
     m_sesParam.OnDialogCmd = OnDialogCmd;
@@ -52,28 +53,28 @@ CPUSessionBase::~CPUSessionBase()
 void CPUSessionBase::SetUser(const char* id, const char* passwd)
 {
     m_sesParam.iClientType = BVCSP_CLIENT_TYPE_UA;
-    strncpy_s(m_sesParam.szUserName, id, _TRUNCATE);
-    strncpy_s(m_sesParam.szPassword, passwd, _TRUNCATE);
+    strncpy_s(m_sesParam.szUserName, sizeof(m_sesParam.szUserName), id, _TRUNCATE);
+    strncpy_s(m_sesParam.szPassword, sizeof(m_sesParam.szPassword), passwd, _TRUNCATE);
 }
 void CPUSessionBase::SetName(const char* Name)
 {
-    strncpy_s(m_deviceInfo.szName, Name, _TRUNCATE);
+    strncpy_s(m_deviceInfo.szName, sizeof(m_deviceInfo.szName), Name, _TRUNCATE);
 }
 void CPUSessionBase::SetManufacturer(const char* Manufacturer)
 {
-    strncpy_s(m_deviceInfo.szManufacturer, Manufacturer, _TRUNCATE);
+    strncpy_s(m_deviceInfo.szManufacturer, sizeof(m_deviceInfo.szManufacturer), Manufacturer, _TRUNCATE);
 }
 void CPUSessionBase::SetProductName(const char* ProductName)
 {
-    strncpy_s(m_deviceInfo.szProductName, ProductName, _TRUNCATE);
+    strncpy_s(m_deviceInfo.szProductName, sizeof(m_deviceInfo.szProductName), ProductName, _TRUNCATE);
 }
 void CPUSessionBase::SetSoftwareVersion(const char* SoftwareVersion)
 {
-    strncpy_s(m_deviceInfo.szSoftwareVersion, SoftwareVersion, _TRUNCATE);
+    strncpy_s(m_deviceInfo.szSoftwareVersion, sizeof(m_deviceInfo.szSoftwareVersion), SoftwareVersion, _TRUNCATE);
 }
 void CPUSessionBase::SetHardwareVersion(const char* HardwareVersion)
 {
-    strncpy_s(m_deviceInfo.szHardwareVersion, HardwareVersion, _TRUNCATE);
+    strncpy_s(m_deviceInfo.szHardwareVersion, sizeof(m_deviceInfo.szHardwareVersion), HardwareVersion, _TRUNCATE);
 }
 void CPUSessionBase::SetWIFICount(int count)
 {
@@ -234,7 +235,7 @@ int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* loca
 
 void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout, int iKeepaliveInterval)
 {
-    strncpy_s(m_sesParam.szServerAddr, IP, _TRUNCATE);
+    strncpy_s(m_sesParam.szServerAddr, sizeof(m_sesParam.szServerAddr), IP, _TRUNCATE);
     m_sesParam.iServerPort = port;
     m_sesParam.iCmdProtoType = proto == 0 ? BVCU_PROTOTYPE_UDP : BVCU_PROTOTYPE_TCP;
     m_sesParam.iTimeOut = timeout;
@@ -357,7 +358,7 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
         eventAlarm.iSubDevIdx = index;
         eventAlarm.iValue = value;
         eventAlarm.bEnd = bEnd;
-        sprintf_s(eventAlarm.szKey, sizeof(eventAlarm.szKey), "PUSimulatorE_%lld", time(NULL));
+        sprintf_s(eventAlarm.szKey, "PUSimulatorE_%lld", time(NULL));
         if (desc)
             strncpy_s(eventAlarm.szEventDesc, sizeof(eventAlarm.szEventDesc), desc, _TRUNCATE);
         if (m_GPSChannels[0])
@@ -462,7 +463,7 @@ CChannelBase* CPUSessionBase::GetChannelBase(int channelIndex)
 
 void CPUSessionBase::OnSessionEvent(BVCSP_HSession hSession, int iEventCode, void* pParam)
 {
-    BVCU_Result iResult = (BVCU_Result)(int(pParam));
+    BVCU_Result iResult = (BVCU_Result)((long long)(pParam));
     printf("session event hSession:%p iEventCode:%d result:%d \n", hSession, iEventCode, iResult);
     BVCSP_SessionInfo sesInfo;
     if (BVCU_Result_SUCCEEDED(BVCSP_GetSessionInfo(hSession, &sesInfo)))

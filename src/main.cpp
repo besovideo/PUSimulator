@@ -1,6 +1,11 @@
 ﻿#include <stdio.h>
+#ifndef __linux__
 #include <process.h>
+#else
+#include <pthread.h>
+#endif
 #include <string>
+#include "utils.h"
 #include "BVCSP.h"
 #include "main.h"
 
@@ -51,7 +56,11 @@ static bool bRun = true;
 static char cmdType[2] = { 0,0 };
 static time_t lastPrintTime = 0;
 // 用来定时 读取音视频、GPS、串口数据，并发送。
+#ifndef __linux__
 unsigned __stdcall Wall_App(void*)
+#else
+void *Wall_App(void*)
+#endif
 {
     fileTransManager.m_OnEvent = File_OnEvent;
 
@@ -112,13 +121,19 @@ unsigned __stdcall Wall_App(void*)
     Logout();
     BVCSP_Finish();
     cmdType[0] = '\n';
+#ifndef __linux__
     return 0;
+#endif
 }
 
 int main()
 {
+#ifndef __linux__
     _beginthreadex(NULL, 0, Wall_App, NULL, 0, NULL);
-
+#else
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, Wall_App, NULL);
+#endif
 
     while (1)
     {
@@ -252,7 +267,7 @@ bool UploadFile(int index) {
             strftime(sfm, sizeof(sfm), "%H%M%S", pnow);
 
             BVCU_PUCFG_DeviceInfo* info = pSession[index]->GetDeviceInfo();
-            sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
+            sprintf_s(remotefile, "/%s/Video/%s/%s_00_%s_%s_LA0800.mp4", info->szID, nyr, info->szID, nyr, sfm);
             BVCU_File_HTransfer hTransfer;
             int result = pSession[index]->UploadFile(&hTransfer, UPLOAD_FILE_PATH_NAME, remotefile);
             printf("upload >>>>>>>>>>> file %d %s -> %s\n", result, UPLOAD_FILE_PATH_NAME, remotefile);
@@ -300,7 +315,7 @@ void UploadFile2() {
         BVCU_PUCFG_DeviceInfo* info = pSession[0]->GetDeviceInfo();
 
         char remotefile[512] = { 0 };
-        sprintf_s(remotefile, sizeof(remotefile), "/%s/Video/%s/%s_00_%s_%s_LA0800_#800kV -+=.$^&()!@~`';500kV#2500kV500kV.mp4", info->szID, nyr, info->szID, nyr, "111111");
+        sprintf_s(remotefile, "/%s/Video/%s/%s_00_%s_%s_LA0800_#800kV -+=.$^&()!@~`';500kV#2500kV500kV.mp4", info->szID, nyr, info->szID, nyr, "111111");
 
         for (int i = 0; i < concurrency; i++)
         {

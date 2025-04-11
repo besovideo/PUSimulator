@@ -1,4 +1,5 @@
 ﻿#include <string>
+#include "utils.h"
 #include "config.h"
 
 #ifdef _MSC_VER
@@ -90,16 +91,16 @@ void LoadConfig(PUConfig* pConfig)
     pConfig->PUCount = 1;
     pConfig->Concurrency = 100;
     pConfig->Slow = 1;
-    strncpy_s(pConfig->ID, DEFAULT_ID);
-    strncpy_s(pConfig->Name, DEFAULT_NAME);
-    strncpy_s(pConfig->serverIP, DEFAULT_SERVERIP);
-    strncpy_s(pConfig->gpsName, "GPS");
-    strncpy_s(pConfig->mediaName, "0");
-    strncpy_s(pConfig->audioFile, "8k_1_16.g711a");
-    strncpy_s(pConfig->videoFile, "h264_320x256.264");
+    strncpy_s(pConfig->ID, sizeof(pConfig->ID), DEFAULT_ID, _TRUNCATE);
+    strncpy_s(pConfig->Name, sizeof(pConfig->Name), DEFAULT_NAME, _TRUNCATE);
+    strncpy_s(pConfig->serverIP, sizeof(pConfig->serverIP), DEFAULT_SERVERIP, _TRUNCATE);
+    strncpy_s(pConfig->gpsName, sizeof(pConfig->gpsName), "GPS", _TRUNCATE);
+    strncpy_s(pConfig->mediaName, sizeof(pConfig->mediaName), "0", _TRUNCATE);
+    strncpy_s(pConfig->audioFile, sizeof(pConfig->audioFile), "8k_1_16.g711a", _TRUNCATE);
+    strncpy_s(pConfig->videoFile, sizeof(pConfig->videoFile), "h264_320x256.264", _TRUNCATE);
     pConfig->serverPort = DEFAULT_SERVERPORT;
     pConfig->protoType = DEFAULT_PROTOTYPE;
-    pConfig->bRelogin = 0;
+    pConfig->relogin = 0;
     pConfig->lat = 200 * 10000000;
     pConfig->lng = 200 * 10000000;
     pConfig->interval = DEFAULT_GPS_INTERVAL;

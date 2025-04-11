@@ -1,4 +1,7 @@
 ﻿#include <string>
+#include <cstdlib>
+#include <stdio.h>
+#include "utils.h"
 #include "media.h"
 #include "config.h"
 
@@ -143,7 +146,7 @@ void CMediaChannel::Reply()
     }
     //static char videoEx[64] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x80, 0x1E, 0xDA, 0x05, 0x02, 0x11, 0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80 };
     static int  videoExLen = 20;
-    static char audioEx[2] = { 0x12, 0x88 };
+    static unsigned char audioEx[2] = { 0x12, 0x88 };
     // 以上扩展数据，都是根据自带 音视频文件数据编码参数写死的，修改数据来源时，需要根据您的数据源确定。
     if (m_bOpening)
     {
@@ -166,7 +169,7 @@ void CMediaChannel::Reply()
             audioSdp.codec = SAVCODEC_ID_AAC;
             audioSdp.iBitrate = 64000;
             audioSdp.iSampleRate = 32000;
-            audioSdp.pExtraData = audioEx;
+            audioSdp.pExtraData = (char *)audioEx;
             audioSdp.iExtraDataSize = 2;
         }
         else
