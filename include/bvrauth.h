@@ -142,6 +142,7 @@ int bvr_get_info(BVRContext* ctx, struct BVRAuthParam* info);
 
 // 获取认证结果, 第一个认证结果
 BVRAuthResult bvr_get_result(BVRContext* ctx);
+BVRAuthResult bvr_get_result260(BVRContext* ctx);
 // 获取认证结果
 BVRAuthResult bvr_get_result_2(BVRContext* ctx, int randCode);
 

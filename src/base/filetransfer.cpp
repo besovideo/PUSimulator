@@ -1,23 +1,18 @@
 ﻿
 #include <string>
-#include "../utils.h"
+#include "../utils/utils.h"
 #include "session.h"
 #include "filetransfer.h"
+#include "cfile.h"
 
 #ifdef _MSC_VER
 #include <windows.h>
 #endif
 
+extern bv_file* g_file; // cfile.cpp中定义的文件读写接口
+
 CFileTransfer::CFileTransfer()
-    : m_cspDialog(NULL)
-    , m_iStatus(BVFILE_DIALOG_STATUS_NONE)
-    , m_fFile(NULL)
-    , m_iFileSize(0)
-    , m_iCompleTime(0)
-    , m_iHandle(0)
-    , m_pOwn(NULL)
-    , m_bClosing(0)
-    , m_bCallOpen(0)
+    : m_cspDialog(NULL), m_iStatus(BVFILE_DIALOG_STATUS_NONE), m_fFile(NULL), m_iFileSize(0), m_iCompleTime(0), m_iHandle(0), m_pOwn(NULL), m_bClosing(0), m_bCallOpen(0)
 {
     memset(&m_fileInfo, 0x00, sizeof(m_fileInfo));
     m_localFilePathName[0] = '\0';
@@ -27,12 +22,12 @@ void CFileTransfer::Init(CFileTransManager* pOwn)
 {
     if (m_cspDialog)
     {
-        //BVCSP_Dialog_Close(m_cspDialog); // BVCU_Finsh()会死锁。
+        // BVCSP_Dialog_Close(m_cspDialog); // BVCU_Finsh()会死锁。
         m_cspDialog = NULL;
     }
     if (m_fFile)
     {
-        m_pOwn->bv_fclose(m_fFile);
+        g_file->fclose(m_fFile);
         m_fFile = NULL;
     }
     m_iStatus = BVFILE_DIALOG_STATUS_NONE;
@@ -58,35 +53,37 @@ int CFileTransfer::SetInfo(BVCU_File_TransferParam* pParam)
         m_fileInfo.stParam.iTimeOut = 30 * 1000;
     // 打开文件
     Utf8ToAnsi(szLocalFileAnsi, sizeof(szLocalFileAnsi), m_localFilePathName);
+    strncpy_s(m_localFilePathName, sizeof(m_localFilePathName), szLocalFileAnsi, _TRUNCATE);
     if (m_fileInfo.stParam.bUpload == 0)
     { // 下载文件
-        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "ab+", 1);
+        m_fFile = g_file->fsopen(szLocalFileAnsi, "ab+", 1);
         if (m_fFile)
         { // 处理续传
-            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
-            m_iFileSize = m_pOwn->bv_ftell(m_fFile);
-            if (m_fileInfo.stParam.iFileStartOffset == -1) // == -1
+            g_file->fseek(m_fFile, 0L, SEEK_END);
+            m_iFileSize = g_file->ftell(m_fFile);
+            if ((int)m_fileInfo.stParam.iFileStartOffset == -1) // == -1
             {
                 m_fileInfo.stParam.iFileStartOffset = m_iFileSize;
                 m_fileInfo.iTransferBytes = m_iFileSize;
             }
-            else {
+            else
+            {
                 m_fileInfo.stParam.iFileStartOffset = 0;
                 if (m_iFileSize > 0) // 重新传输，删除老文件
                 {
                     fclose(m_fFile);
-                    m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "wb+", TRUE);// _SH_DENYRW);;
+                    m_fFile = g_file->fsopen(szLocalFileAnsi, "wb+", TRUE); // _SH_DENYRW);;
                 }
             }
         }
     }
     else
     { // 上传文件，获取文件大小
-        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "rb", 0);
+        m_fFile = g_file->fsopen(szLocalFileAnsi, "rb", 0);
         if (m_fFile)
         {
-            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
-            m_iFileSize = m_pOwn->bv_ftell(m_fFile);
+            g_file->fseek(m_fFile, 0L, SEEK_END);
+            m_iFileSize = g_file->ftell(m_fFile);
             m_fileInfo.iTotalBytes = m_iFileSize;
         }
     }
@@ -105,7 +102,7 @@ int CFileTransfer::SetInfo_RecvReq(BVCSP_DialogParam* pParam)
     m_fileInfo.stParam.iSize = sizeof(m_fileInfo.stParam);
     m_fileInfo.stParam.iTimeOut = 30 * 1000;
     strncpy_s(m_fileInfo.stParam.szTargetID, sizeof(m_fileInfo.stParam.szTargetID), pParam->szSourceID, _TRUNCATE);
-    m_fileInfo.stParam.pRemoteFilePathName = pParam->stFileTarget.pPathFileName;
+    m_fileInfo.stParam.pLocalFilePathName = pParam->stFileTarget.pPathFileName;
     m_fileInfo.stParam.iFileStartOffset = pParam->stFileTarget.iStartTime_iOffset;
     m_fileInfo.iTotalBytes = pParam->stFileTarget.iEndTime_iFileSize;
     if (pParam->iAVStreamDir == BVCU_MEDIADIR_DATASEND)
@@ -123,7 +120,7 @@ BVCU_File_TransferInfo* CFileTransfer::GetInfoNow(int bNetworkThread)
         {
             m_fileInfo.iCreateTime = cspDialogInfo.iCreateTime;
             m_fileInfo.iOnlineTime = cspDialogInfo.iOnlineTime;
-            m_fileInfo.stParam.pRemoteFilePathName = cspDialogInfo.stParam.stFileTarget.pPathFileName;
+            m_fileInfo.stParam.pLocalFilePathName = cspDialogInfo.stParam.stFileTarget.pPathFileName;
             if (m_fileInfo.stParam.bUpload)
             {
                 m_fileInfo.iSpeedKBpsLongTerm = cspDialogInfo.iVideoKbpsLongTerm;
@@ -137,7 +134,7 @@ BVCU_File_TransferInfo* CFileTransfer::GetInfoNow(int bNetworkThread)
         }
         else
         {
-            m_fileInfo.stParam.pRemoteFilePathName = NULL;
+            m_fileInfo.stParam.pLocalFilePathName = NULL;
         }
     }
     return &m_fileInfo;
@@ -157,10 +154,12 @@ int CFileTransfer::HandleEvent(int iTickCount)
                     int isendcount = 0;
                     if (m_iCompleTime)
                         iDely = (iDely * m_pOwn->m_iSendDataCount) >> 10;
-                    else iDely = 1;
-                    do {
+                    else
+                        iDely = 1;
+                    do
+                    {
                         char sendBuf[800];
-                        int iSendLen = m_pOwn->bv_fread(sendBuf, 1, 800, m_fFile);
+                        int iSendLen = g_file->fread(sendBuf, 1, 800, m_fFile);
                         if (iSendLen > 0)
                         {
                             BVCSP_Packet bvcspPacket;
@@ -171,7 +170,7 @@ int CFileTransfer::HandleEvent(int iTickCount)
                             bvcspPacket.pData = sendBuf;
                             if (BVCU_Result_FAILED(BVCSP_Dialog_Write(m_cspDialog, &bvcspPacket)))
                             {
-                                m_pOwn->bv_fseek(m_fFile, 0 - iSendLen, SEEK_CUR);
+                                g_file->fseek(m_fFile, 0 - iSendLen, SEEK_CUR);
                                 break;
                             }
                             else
@@ -180,7 +179,8 @@ int CFileTransfer::HandleEvent(int iTickCount)
                                 m_iLastDataTime = GetTickCount();
                             }
                         }
-                        else {
+                        else
+                        {
                             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
                             break;
                         }
@@ -189,7 +189,8 @@ int CFileTransfer::HandleEvent(int iTickCount)
                     m_iCompleTime = iTickCount;
                 }
             }
-            else {
+            else
+            {
                 m_iCompleTime = iTickCount;
                 if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
                     m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
@@ -202,7 +203,7 @@ int CFileTransfer::HandleEvent(int iTickCount)
     {
         if (m_iStatus == BVFILE_DIALOG_STATUS_TRANSFER && m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
         {
-            m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 10 * 1000);// 延迟10秒关闭
+            m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 10 * 1000); // 延迟10秒关闭
             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
         }
     }
@@ -210,11 +211,11 @@ int CFileTransfer::HandleEvent(int iTickCount)
     {
         int iDely = iTickCount - m_iCompleTime;
         if (iDely < 0 || iDely > MODULE_FILE_TRANSFER_TIMEOUT)
-            return 0;  // 关闭通道
+            return 0; // 关闭通道
     }
     else if (iTickCount - m_iLastDataTime > MODULE_FILE_TRANSFER_TIMEOUT)
-    { // 3分钟没有数据发送/接收，关闭通道
-        m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000);// 延迟2秒关闭;
+    {                                                                           // 3分钟没有数据发送/接收，关闭通道
+        m_iCompleTime = iTickCount - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000); // 延迟2秒关闭;
         if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
         else
@@ -230,14 +231,14 @@ BVCU_Result CFileTransfer::OnRecvFrame(BVCSP_Packet* pPacket)
         m_iLastDataTime = GetTickCount();
         if (pPacket->iDataSize > 0)
         {
-            int iWriteLen = m_pOwn->bv_fwrite(pPacket->pData, 1, pPacket->iDataSize, m_fFile);
+            int iWriteLen = g_file->fwrite(pPacket->pData, 1, pPacket->iDataSize, m_fFile);
             m_fileInfo.iTransferBytes += pPacket->iDataSize;
             if (iWriteLen >= pPacket->iDataSize)
                 return BVCU_RESULT_S_OK;
         }
-        else if (pPacket->iDataSize == 0)  // 数据已经和发送方确认传输完毕
+        else if (pPacket->iDataSize == 0) // 数据已经和发送方确认传输完毕
         {
-            m_iCompleTime = GetTickCount() - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000);// 延迟2秒关闭
+            m_iCompleTime = GetTickCount() - (MODULE_FILE_TRANSFER_TIMEOUT - 2 * 1000); // 延迟2秒关闭
             m_iStatus = BVFILE_DIALOG_STATUS_SUCCEEDED;
             return BVCU_RESULT_S_OK;
         }
@@ -252,7 +253,7 @@ void CFileTransfer::OnEvent(int iEvent, BVCU_Result iResult, int bOnbvcspEvent)
     {
         m_bClosing = 1;
         if (m_fFile)
-            m_pOwn->bv_fclose(m_fFile);
+            g_file->fclose(m_fFile);
         m_fFile = NULL;
     }
     else
@@ -269,20 +270,20 @@ void CFileTransfer::OnEvent(int iEvent, BVCU_Result iResult, int bOnbvcspEvent)
         { // 文件没有传输完成，或对方没有接收完成
             if (m_fileInfo.iTransferBytes != m_fileInfo.iTotalBytes)
                 iResult = BVCU_RESULT_E_BADSTATE;
-            else if (bOnbvcspEvent == 0 && m_fileInfo.stParam.bUpload)  // 自己主动关闭的，接收者没有发送eof过来，失败（不再兼容2020年5月之前版本服务器）。
+            else if (bOnbvcspEvent == 0 && m_fileInfo.stParam.bUpload) // 自己主动关闭的，接收者没有发送eof过来，失败（不再兼容2020年5月之前版本服务器）。
                 iResult = BVCU_RESULT_E_MAXRETRIES;
         }
     }
     m_pOwn->OnFileEvent((BVCU_File_HTransfer)m_iHandle, m_fileInfo.stParam.pUserData, iEvent, iResult);
     if (m_bClosing == TRUE)
     {
-        if (m_cspDialog)  // onevent 之后才能关闭，不然 pRemoteFilePathName 无效。
+        if (m_cspDialog) // onevent 之后才能关闭，不然 pRemoteFilePathName 无效。
             BVCSP_Dialog_Close(m_cspDialog);
         m_cspDialog = NULL;
     }
 }
 
-BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
+BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam, const bvFileInfo* fileInfo)
 {
     char szLocalFileAnsi[512] = { 0 };
     if (m_fileInfo.stParam.pLocalFilePathName)
@@ -296,54 +297,56 @@ BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
     Utf8ToAnsi(szLocalFileAnsi, sizeof(szLocalFileAnsi), m_localFilePathName);
     m_fileInfo.stParam.pLocalFilePathName = m_localFilePathName;
     if (m_fileInfo.stParam.bUpload)
-    {  // 下载请求
-        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "rb", 0);
+    { // 下载请求
+        m_fFile = g_file->fsopen(szLocalFileAnsi, "rb", 0);
         if (!m_fFile)
         {
             printf("fopen file=%s error\n", szLocalFileAnsi);
             return BVCU_RESULT_E_NOTFOUND;
         }
 
-        m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
-        m_iFileSize = m_pOwn->bv_ftell(m_fFile);
+        g_file->fseek(m_fFile, 0L, SEEK_END);
+        m_iFileSize = g_file->ftell(m_fFile);
         if (m_fileInfo.stParam.iFileStartOffset != -1)
         {
             if (m_fileInfo.stParam.iFileStartOffset > m_iFileSize)
                 return BVCU_RESULT_E_BADREQUEST;
-            m_pOwn->bv_fseek(m_fFile, m_fileInfo.stParam.iFileStartOffset, SEEK_SET);
+            g_file->fseek(m_fFile, m_fileInfo.stParam.iFileStartOffset, SEEK_SET);
         }
-        else {
+        else
+        {
             m_fileInfo.stParam.iFileStartOffset = 0;
-            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_SET);
+            g_file->fseek(m_fFile, 0L, SEEK_SET);
         }
     }
     else
-    { // 上传请求
-        m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "ab+", 1);// _SH_DENYRW);;
+    {                                                        // 上传请求
+        m_fFile = g_file->fsopen(szLocalFileAnsi, "ab+", 1); // _SH_DENYRW);;
         if (m_fFile)
         { // 处理续传
-            m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
-            m_iFileSize = m_pOwn->bv_ftell(m_fFile);
+            g_file->fseek(m_fFile, 0L, SEEK_END);
+            m_iFileSize = g_file->ftell(m_fFile);
             if (m_fileInfo.stParam.iFileStartOffset == -1) // 续传
                 m_fileInfo.stParam.iFileStartOffset = m_iFileSize;
-            else {
+            else
+            {
                 m_fileInfo.stParam.iFileStartOffset = 0;
                 if (m_iFileSize > 0) // 重新传输，删除老文件
                 {
                     fclose(m_fFile);
-                    m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "wb+", TRUE);// _SH_DENYRW);;
+                    m_fFile = g_file->fsopen(szLocalFileAnsi, "wb+", TRUE); // _SH_DENYRW);;
                 }
             }
         }
         if (!m_fFile)
         {
             if (m_fileInfo.stParam.iFileStartOffset == -1)
-            {// 如果是续传。判断是否正在被下载，是否已经上传完成。
-                m_fFile = m_pOwn->bv_fsopen(szLocalFileAnsi, "rb", 0);
+            { // 如果是续传。判断是否正在被下载，是否已经上传完成。
+                m_fFile = g_file->fsopen(szLocalFileAnsi, "rb", 0);
                 if (!m_fFile)
                     return BVCU_RESULT_E_BUSY;
-                m_pOwn->bv_fseek(m_fFile, 0L, SEEK_END);
-                m_fileInfo.stParam.iFileStartOffset = m_pOwn->bv_ftell(m_fFile);
+                g_file->fseek(m_fFile, 0L, SEEK_END);
+                m_fileInfo.stParam.iFileStartOffset = g_file->ftell(m_fFile);
                 if (m_fileInfo.stParam.iFileStartOffset < pParam->stFileTarget.iEndTime_iFileSize)
                     return BVCU_RESULT_E_BUSY;
             }
@@ -352,21 +355,23 @@ BVCU_Result CFileTransfer::UpdateLocalFile(BVCSP_DialogParam* pParam)
         }
         m_iFileSize = pParam->stFileTarget.iEndTime_iFileSize;
         if (m_fileInfo.stParam.iFileStartOffset > m_iFileSize)
-            return BVCU_RESULT_E_MAXRETRIES; // 续传请求，且本地文件大小大约要传输的文件大小。
+            return BVCU_RESULT_E_MAXRETRIES; // 续传请求，且本地文件大小大于要传输的文件大小。
     }
     m_fileInfo.iTransferBytes = m_fileInfo.stParam.iFileStartOffset;
     m_fileInfo.iTotalBytes = m_iFileSize;
     // 设置回复参数
     pParam->stFileTarget.iEndTime_iFileSize = m_iFileSize;
     pParam->stFileTarget.iStartTime_iOffset = m_fileInfo.stParam.iFileStartOffset;
-    pParam->afterRecv = CFileTransManager::OnAfterRecv_BVCSP;
-    pParam->OnEvent = CFileTransManager::OnDialogEvent_BVCSP;
-    pParam->pUserData = this;
+    if (fileInfo)
+    {
+        m_pOwn->FileInfo2Json(fileInfo, szLocalFileAnsi, sizeof(szLocalFileAnsi));
+        pParam->stFileTarget.pFileInfoJson = szLocalFileAnsi;
+    }
     m_iStatus = BVFILE_DIALOG_STATUS_INVITING;
     if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
     {
         if (m_fFile)
-            m_pOwn->bv_fclose(m_fFile);
+            g_file->fclose(m_fFile);
         m_fFile = NULL;
     }
     m_iLastDataTime = GetTickCount();
@@ -382,7 +387,7 @@ int CFileTransfer::BuildFileData()
     {
         m_fileInfo.iCreateTime = cspDialogInfo.iCreateTime;
         m_fileInfo.iOnlineTime = cspDialogInfo.iOnlineTime;
-        m_fileInfo.stParam.pRemoteFilePathName = cspDialogInfo.stParam.stFileTarget.pPathFileName;
+        m_fileInfo.stParam.pLocalFilePathName = cspDialogInfo.stParam.stFileTarget.pPathFileName;
         if (cspDialogInfo.stParam.stFileTarget.iStartTime_iOffset != -1 && m_fileInfo.stParam.iFileStartOffset == -1)
             m_fileInfo.stParam.iFileStartOffset = m_fileInfo.iTransferBytes = cspDialogInfo.stParam.stFileTarget.iStartTime_iOffset;
         else if (cspDialogInfo.stParam.stFileTarget.iStartTime_iOffset != m_fileInfo.stParam.iFileStartOffset)
@@ -396,11 +401,11 @@ int CFileTransfer::BuildFileData()
         {
             if (m_fileInfo.iTransferBytes >= m_fileInfo.iTotalBytes)
             {
-                m_pOwn->bv_fclose(m_fFile);
+                g_file->fclose(m_fFile);
                 m_fFile = NULL;
             }
             else
-                m_pOwn->bv_fseek(m_fFile, m_fileInfo.iTransferBytes, SEEK_SET);
+                g_file->fseek(m_fFile, m_fileInfo.iTransferBytes, SEEK_SET);
         }
         m_iStatus = BVFILE_DIALOG_STATUS_TRANSFER;
         m_iLastDataTime = GetTickCount();
@@ -420,12 +425,16 @@ BVCU_Result CFileTransManager::OnDialogCmd_BVCSP(BVCSP_HDialog hDialog, int iEve
         BVCU_Result iResult = BVCU_RESULT_E_INVALIDARG;
         if (pFileTransfer->SetInfo_RecvReq(pParam))
         {
-            iResult = OnFileRequest((BVCU_File_HTransfer)pFileTransfer->GetHandle(), pFileTransfer->GetParam());
-            if (BVCU_Result_SUCCEEDED(iResult))
+            const bvFileInfo* fileInfo = OnFileRequest((BVCU_File_HTransfer)pFileTransfer->GetHandle(), pFileTransfer->GetParam()->pLocalFilePathName);
+            if (fileInfo)
             {
-                iResult = pFileTransfer->UpdateLocalFile(pParam);
+                iResult = pFileTransfer->UpdateLocalFile(pParam, fileInfo);
             }
         }
+
+        pParam->pUserData = this;
+        pParam->afterRecv = CFileTransManager::OnAfterRecv_BVCSP;
+        pParam->OnEvent = CFileTransManager::OnDialogEvent_BVCSP;
         if (BVCU_Result_SUCCEEDED(iResult))
         {
             pFileTransfer->SetCSPDialog(hDialog);
@@ -442,7 +451,8 @@ BVCU_Result CFileTransManager::OnDialogCmd_BVCSP(BVCSP_HDialog hDialog, int iEve
         OnDialogEvent_BVCSP(hDialog, BVCSP_EVENT_DIALOG_CLOSE, &stParam);
         return BVCU_RESULT_S_OK;
     }
-    else  return BVCU_RESULT_E_BADREQUEST;
+    else
+        return BVCU_RESULT_E_BADREQUEST;
     return BVCU_RESULT_E_SEVERINTERNAL;
 }
 void CFileTransManager::OnDialogEvent_BVCSP(BVCSP_HDialog hDialog, int iEventCode, BVCSP_Event_DialogCmd* pParam)
@@ -450,10 +460,7 @@ void CFileTransManager::OnDialogEvent_BVCSP(BVCSP_HDialog hDialog, int iEventCod
     if (pParam == NULL)
         return;
     BVCSP_DialogParam* pDialogParam = pParam->pDialogParam;
-    CPUSessionBase* pSession = (CPUSessionBase*)pDialogParam->pUserData;
-    if (pSession == 0)
-        return;
-    CFileTransManager* pManager = pSession->GetFileManager();
+    CFileTransManager* pManager = (CFileTransManager*)pDialogParam->pUserData;
     if (pManager == 0)
         return;
     CFileTransfer* pFileTransfer = pManager->FindFileTransferByDlg(hDialog);
@@ -474,10 +481,7 @@ BVCU_Result CFileTransManager::OnAfterRecv_BVCSP(BVCSP_HDialog hDialog, BVCSP_Pa
     if (BVCU_Result_FAILED(BVCSP_GetDialogInfo(hDialog, &info)))
         return BVCU_RESULT_E_BADREQUEST;
 
-    CPUSessionBase* pSession = (CPUSessionBase*)info.stParam.pUserData;
-    if (pSession == 0)
-        return BVCU_RESULT_E_BADREQUEST;
-    CFileTransManager* pManager = pSession->GetFileManager();
+    CFileTransManager* pManager = (CFileTransManager*)info.stParam.pUserData;
     if (pManager == 0)
         return BVCU_RESULT_E_BADREQUEST;
     CFileTransfer* pFileTransfer = pManager->FindFileTransferByDlg(hDialog);
@@ -490,8 +494,8 @@ BVCU_Result CFileTransManager::OnAfterRecv_BVCSP(BVCSP_HDialog hDialog, BVCSP_Pa
 
 CFileTransManager::CFileTransManager()
 {
-    m_iSendDataCount = 51200; // 40000 KBps
-    m_iBandwidthLimit = 100 * 1024;  // 100 Mbps
+    m_iSendDataCount = 51200;       // 40000 KBps
+    m_iBandwidthLimit = 100 * 1024; // 100 Mbps
     memset(m_fileList, 0x00, sizeof(m_fileList));
 }
 CFileTransManager::~CFileTransManager()
@@ -538,7 +542,7 @@ CFileTransfer* CFileTransManager::AddFileTransfer()
         pFileTransfer->SetHandle(index + 1);
 
         if (m_iBandwidthLimit > 0)
-        {  // 文件传输带宽限制，计算每路带宽
+        { // 文件传输带宽限制，计算每路带宽
             int iCount = GetFileTransferCount();
             m_iSendDataCount = (m_iBandwidthLimit << 2) / (25 * iCount); // kbps*1024/8/800/count
         }
@@ -564,7 +568,7 @@ int CFileTransManager::RemoveFileTransfer(CFileTransfer* pFileTransfer)
 
         int iCount = GetFileTransferCount();
         if (m_iBandwidthLimit > 0 && iCount > 0)
-        {  // 文件传输带宽限制，计算每路带宽
+        {                                                                // 文件传输带宽限制，计算每路带宽
             m_iSendDataCount = (m_iBandwidthLimit << 2) / (25 * iCount); // kbps*1024/8/800/count
         }
         return 1;
@@ -605,6 +609,30 @@ int CFileTransManager::GetFileTransferCount()
     }
     return count;
 }
+int CFileTransManager::FileInfo2Json(const bvFileInfo* fileInfo, char* buf, int bufsize)
+{
+    if (fileInfo)
+    {
+        char temp[512];
+        int lsize = sprintf(temp, "{\n\"id\":\"%s\",\"starttime\":%lld,\"endtime\":%lld,\"channel\":%d,\"lat\":%d,\"lng\":%d",
+            m_deviceInfo->szID, fileInfo->starttime, fileInfo->endtime, fileInfo->channel, fileInfo->lat, fileInfo->lng);
+        if (fileInfo->user)
+            lsize += sprintf(temp + lsize, ",\"user\":\"%s\"", fileInfo->user);
+        if (fileInfo->filetype)
+            lsize += sprintf(temp + lsize, ",\"filetype\":\"%s\"", fileInfo->filetype);
+        if (fileInfo->desc1)
+            lsize += sprintf(temp + lsize, ",\"desc1\":\"%s\"", fileInfo->desc1);
+        if (fileInfo->desc2)
+            lsize += sprintf(temp + lsize, ",\"desc2\":\"%s\"", fileInfo->desc2);
+        if (fileInfo->mark)
+            lsize += sprintf(temp + lsize, ",\"mark\":true");
+        lsize += sprintf(temp + lsize, "}");
+        lsize = base64_encode(temp, lsize, buf, bufsize);
+        return lsize;
+    }
+    return 0;
+}
+
 int CFileTransManager::HandleEvent()
 {
     int iLastTick = GetTickCount();

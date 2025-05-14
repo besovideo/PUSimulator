@@ -34,6 +34,8 @@ LIBBVCSP_API BVCU_Result BVCSP_GetAuthInfo(BVRAuthParam* info);
 */
 BVCU_Result BVCSP_GetAuthResult(BVRAuthResult* authResult);
 
+BVCU_Result BVCSP_GetAuthResult2(BVRAuthResult* authResult, BVRAuthResult* authResult260);
+
 /**
     获取需要加密的数据, 使用开发者的公钥进行加密. 初始化param->appInfo
 */

@@ -1,19 +1,13 @@
 ﻿
 #include <string>
 #include <cstring>
-#include "../utils.h"
+#include "../utils/utils.h"
 #include "dialog.h"
 #include "session.h"
 
-
 CChannelBase::bvcsp_OnDialogEvent CChannelBase::g_bvcsp_onevent = 0;
 CChannelBase::CChannelBase(int IndexBase)
-    : m_index(0)
-    , m_channelIndexBase(IndexBase)
-    , m_supportMediaDir(0)
-    , m_hDialog(0)
-    , m_openMediaDir(0)
-    , m_bOpening(false)
+    : m_index(0), m_channelIndexBase(IndexBase), m_supportMediaDir(0), m_hDialog(0), m_openMediaDir(0), m_bOpening(false)
 {
     memset(m_name, 0x00, sizeof(m_name));
 }
@@ -40,12 +34,6 @@ BVCU_Result CChannelBase::OnRecvPacket(const BVCSP_Packet* packet)
         CAVChannelBase* pChannel = dynamic_cast<CAVChannelBase*>(this);
         if (pChannel && packet->iDataType == BVCSP_DATA_TYPE_AUDIO)
             pChannel->OnRecvAudio(packet->iPTS, packet->pData, packet->iDataSize);
-    }
-    else if (m_channelIndexBase == BVCU_SUBDEV_INDEXMAJOR_MIN_TSP)
-    {
-        CTSPChannelBase* pChannel = dynamic_cast<CTSPChannelBase*>(this);
-        if (pChannel)
-            pChannel->OnRecvData(packet->pData, packet->iDataSize);
     }
     return BVCU_RESULT_S_OK;
 }
@@ -82,9 +70,9 @@ BVCU_Result CAVChannelBase::ReplySDP(BVCU_Result result, const BVCSP_VideoCodec*
             pParam->szMyselfAudio = *audio;
             pParam->szTargetAudio = *audio;
         }
-        pParam->afterRecv = CPUSessionBase::afterDialogRecv;
+        pParam->afterRecv = CPUSessionBase::OnAudioRecv;
         pParam->OnEvent = CPUSessionBase::OnDialogEvent;
-        //pParam->iOptions |= BVCSP_DIALOG_OPTIONS_NOFMTP;
+        // pParam->iOptions |= BVCSP_DIALOG_OPTIONS_NOFMTP;
         BVCSP_Event_DialogCmd rep;
         rep.iResult = result;
         rep.pDialogParam = pParam;
@@ -122,42 +110,14 @@ BVCU_Result CAVChannelBase::WriteAudio(long long iPTS, const char* pkt, int len)
     }
     return BVCU_RESULT_E_BADSTATE;
 }
-
-CGPSChannelBase::CGPSChannelBase()
-    : CChannelBase(BVCU_SUBDEV_INDEXMAJOR_MIN_GPS)
+int CAVChannelBase::GetGuessBandwidth()
 {
-    m_supportMediaDir = BVCU_MEDIADIR_DATASEND;
-}
-
-BVCU_Result CGPSChannelBase::WriteData(const BVCU_PUCFG_GPSData* pGPSData)
-{
-    if (m_hDialog != 0)
+    BVCSP_DialogInfo dlgInfo;
+    memset(&dlgInfo, 0x00, sizeof(dlgInfo));
+    BVCU_Result result = BVCSP_GetDialogInfo(GetHDialog(), &dlgInfo);
+    if (BVCU_Result_SUCCEEDED(result))
     {
-        BVCSP_Packet packet;
-        memset(&packet, 0x00, sizeof(packet));
-        packet.iDataType = BVCSP_DATA_TYPE_GPS;
-        packet.iDataSize = sizeof(*pGPSData);
-        packet.pData = (void*)pGPSData;
-        return BVCSP_Dialog_Write(m_hDialog, &packet);
+        return dlgInfo.iGuessBandwidthSend;
     }
-    return BVCU_RESULT_E_BADSTATE;
-}
-
-CTSPChannelBase::CTSPChannelBase()
-    : CChannelBase(BVCU_SUBDEV_INDEXMAJOR_MIN_TSP)
-{
-    m_supportMediaDir = BVCU_MEDIADIR_DATASEND | BVCU_MEDIADIR_DATARECV;
-}
-BVCU_Result CTSPChannelBase::WriteData(const char* pkt, int len)
-{
-    if (m_hDialog != 0)
-    {
-        BVCSP_Packet packet;
-        memset(&packet, 0x00, sizeof(packet));
-        packet.iDataType = BVCSP_DATA_TYPE_TSP;
-        packet.iDataSize = len;
-        packet.pData = (void*)pkt;
-        return BVCSP_Dialog_Write(m_hDialog, &packet);
-    }
-    return BVCU_RESULT_E_BADSTATE;
+    return 0;
 }

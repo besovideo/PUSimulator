@@ -1,11 +1,12 @@
 ﻿#include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "../utils.h"
+#include "../utils/utils.h"
 #include "session.h"
 
 #ifdef _MSC_VER
 #include <windows.h>
+#include <sysinfoapi.h>
 #endif
 
 CPUSessionBase::CPUSessionBase(const char* ID)
@@ -21,8 +22,7 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     m_deviceInfo.iLongitude = 200 * 10000000;
     // 通道信息
     memset(m_avChannels, 0x00, sizeof(m_avChannels));
-    memset(m_GPSChannels, 0x00, sizeof(m_GPSChannels));
-    memset(m_TSPChannels, 0x00, sizeof(m_TSPChannels));
+    memset(&m_GPSInterface, 0x00, sizeof(m_GPSInterface));
     m_session = 0;
     m_bOnline = false;
     m_bBusying = false;
@@ -33,7 +33,7 @@ CPUSessionBase::CPUSessionBase(const char* ID)
     m_sesParam.iTimeOut = 8000;
     strncpy_s(m_sesParam.szClientID, sizeof(m_sesParam.szClientID), ID, _TRUNCATE);
     strncpy_s(m_sesParam.szUserAgent, sizeof(m_sesParam.szUserAgent), "PUSimulatorG1B2", _TRUNCATE);
-    //strncpy_s(m_sesParam.szUKeyID, sizeof(m_sesParam.szUKeyID), "password_encrypted", _TRUNCATE);
+    // strncpy_s(m_sesParam.szUKeyID, sizeof(m_sesParam.szUKeyID), "password_encrypted", _TRUNCATE);
     m_sesParam.iClientType = BVCSP_CLIENT_TYPE_PU;
     m_sesParam.OnCommand = OnCommand;
     m_sesParam.OnDialogCmd = OnDialogCmd;
@@ -135,31 +135,14 @@ int CPUSessionBase::AddAVChannel(CAVChannelBase* pChannel)
     }
     return -1;
 }
-int CPUSessionBase::AddGPSChannel(CGPSChannelBase* pChannel)
+
+void CPUSessionBase::AddGPSInterface(const bvGPSParam* pGPS)
 {
-    for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++i)
+    if (pGPS && pGPS->OnGetGPSData && pGPS->OnGetGPSParam && pGPS->OnSetGPSParam)
     {
-        if (m_GPSChannels[i] == 0)
-        {
-            m_GPSChannels[i] = pChannel;
-            pChannel->SetIndex(i);
-            return i;
-        }
+        m_GPSInterface = *pGPS;
+        m_deviceInfo.iGPSCount = 1;
     }
-    return -1;
-}
-int CPUSessionBase::AddTSPChannel(CTSPChannelBase* pChannel)
-{
-    for (int i = 0; i < MAX_TSP_CHANNEL_COUNT; ++i)
-    {
-        if (m_TSPChannels[i] == 0)
-        {
-            m_TSPChannels[i] = pChannel;
-            pChannel->SetIndex(i);
-            return i;
-        }
-    }
-    return -1;
 }
 
 int BVCU_BVCSP_DialogDownload(CFileTransfer* pFile, const BVCU_File_TransferParam* pBVCUParam, BVCSP_DialogParam* pBVCSPParam, BVCSP_DialogControlParam* pBVCSPCtrl)
@@ -170,8 +153,8 @@ int BVCU_BVCSP_DialogDownload(CFileTransfer* pFile, const BVCU_File_TransferPara
     strncpy_s(pBVCSPParam->stTarget.szID, sizeof(pBVCSPParam->stTarget.szID), pBVCUParam->szTargetID, _TRUNCATE);
     pBVCSPParam->stTarget.iIndexMajor = BVCU_SUBDEV_INDEXMAJOR_DOWNLOAD;
     pBVCSPParam->stTarget.iIndexMinor = -1;
-    pBVCSPParam->stFileTarget.pPathFileName = pBVCUParam->pRemoteFilePathName;
-    pBVCSPParam->stFileTarget.pFileInfoJson = pBVCUParam->pFileInfoJson;
+    // pBVCSPParam->stFileTarget.pPathFileName = pBVCUParam->pRemoteFilePathName;
+    // pBVCSPParam->stFileTarget.pFileInfoJson = pBVCUParam->pFileInfoJson;
     pBVCSPParam->stFileTarget.iStartTime_iOffset = pBVCUParam->iFileStartOffset;
     pBVCSPParam->stFileTarget.iEndTime_iFileSize = pFile->GetFileSize();
     if (pBVCUParam->bUpload)
@@ -179,9 +162,7 @@ int BVCU_BVCSP_DialogDownload(CFileTransfer* pFile, const BVCU_File_TransferPara
     else
         pBVCSPParam->iAVStreamDir = BVCU_MEDIADIR_DATARECV;
     pBVCSPParam->bOverTCP = 1;
-    pBVCSPParam->afterRecv = CFileTransManager::OnAfterRecv_BVCSP;
-    pBVCSPParam->OnEvent = CFileTransManager::OnDialogEvent_BVCSP;
-    //control
+    // control
     memset(pBVCSPCtrl, 0x00, sizeof(*pBVCSPCtrl));
     pBVCSPCtrl->iDelayMax = 5000;
     pBVCSPCtrl->iDelayMin = 500;
@@ -190,10 +171,15 @@ int BVCU_BVCSP_DialogDownload(CFileTransfer* pFile, const BVCU_File_TransferPara
     return 1;
 }
 
-int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* localFilePathName, const char* remoteFilePathName)
+int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* localFilePathName, const bvFileInfo* fileInfo)
 {
     if (m_fileManager == NULL)
         return BVCU_RESULT_E_NOTINITILIZED;
+    if (fileInfo == NULL || fileInfo->filetype == NULL || fileInfo->filetype[0] == 0)
+    {
+        printf("fileInfo->filetype is must\n");
+        return BVCU_RESULT_E_BADREQUEST;
+    }
     CFileTransfer* pFileTransfer = m_fileManager->AddFileTransfer();
     if (pFileTransfer == NULL)
         return BVCU_RESULT_E_ALLOCMEMFAILED;
@@ -205,19 +191,32 @@ int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* loca
     strcpy(param.szTargetID, "NRU_");
     param.bUpload = 1;
     param.pLocalFilePathName = (char*)localFilePathName;
-    param.pRemoteFilePathName = (char*)remoteFilePathName;
+    param.fileInfo = fileInfo;
     param.iFileStartOffset = -1;
     if (pFileTransfer->SetInfo(&param))
     {
+        char fileInfoJson[512] = { 0 };
+        char remotePath[512] = { 0 };
         BVCSP_DialogParam cspParam;
         BVCSP_DialogControlParam cspControl;
         BVCU_BVCSP_DialogDownload(pFileTransfer, pFileTransfer->GetParam(), &cspParam, &cspControl);
+        m_fileManager->FileInfo2Json(fileInfo, fileInfoJson, sizeof(fileInfoJson));
+        cspParam.stFileTarget.pFileInfoJson = fileInfoJson;
+
+        const char* pFileName = extract_filename(pFileTransfer->GetParam()->pLocalFilePathName); // 这里的pLocalFilePathName是utf8编码
+        struct tm* timeinfo = localtime(&fileInfo->starttime);
+        sprintf(remotePath, "/%s/%s/%d%02d%02d/%s", m_deviceInfo.szID, fileInfo->filetype,
+            timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, pFileName);
+        cspParam.stFileTarget.pPathFileName = remotePath;
+
         cspParam.hSession = m_session;
-        cspParam.pUserData = this;
+        cspParam.pUserData = m_fileManager;
+        cspParam.afterRecv = CFileTransManager::OnAfterRecv_BVCSP;
+        cspParam.OnEvent = CFileTransManager::OnDialogEvent_BVCSP;
         iResult = BVCSP_Dialog_Open(&cspDialog, &cspParam, &cspControl);
     }
     printf("%ld call OpenFile:%ld targetID:%s file:%s result:%d ",
-        m_session, pFileTransfer->GetHandle(), param.szTargetID, param.pRemoteFilePathName, iResult);
+        m_session, pFileTransfer->GetHandle(), param.szTargetID, param.pLocalFilePathName, iResult);
     if (BVCU_Result_FAILED(iResult))
     {
         m_fileManager->RemoveFileTransfer(pFileTransfer);
@@ -233,11 +232,14 @@ int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* loca
     return iResult;
 }
 
-void CPUSessionBase::SetServer(const char* IP, int port, int proto, int timeout, int iKeepaliveInterval)
+void CPUSessionBase::SetServer(const char* IP, int udp_port, int tcp_port, int proto, int timeout, int iKeepaliveInterval)
 {
     strncpy_s(m_sesParam.szServerAddr, sizeof(m_sesParam.szServerAddr), IP, _TRUNCATE);
-    m_sesParam.iServerPort = port;
     m_sesParam.iCmdProtoType = proto == 0 ? BVCU_PROTOTYPE_UDP : BVCU_PROTOTYPE_TCP;
+    if (m_sesParam.iCmdProtoType == BVCU_PROTOTYPE_TCP)
+        m_sesParam.iServerPort = tcp_port;
+    else
+        m_sesParam.iServerPort = udp_port;
     m_sesParam.iTimeOut = timeout;
     m_sesParam.iKeepaliveInterval = iKeepaliveInterval;
 }
@@ -254,24 +256,9 @@ int CPUSessionBase::Login(int through, int lat, int lng)
         if (m_avChannels[i] != NULL)
             ++iChannelCount;
     }
-    m_deviceInfo.iGPSCount = 0;
-    for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++i)
-    {
-        if (m_GPSChannels[i] != NULL)
-        {
-            ++iChannelCount;
-            m_deviceInfo.iGPSCount++;
-        }
-    }
+
     m_deviceInfo.iSerialPortCount = 0;
-    for (int i = 0; i < MAX_TSP_CHANNEL_COUNT; ++i)
-    {
-        if (m_TSPChannels[i] != NULL)
-        {
-            ++iChannelCount;
-            m_deviceInfo.iSerialPortCount++;
-        }
-    }
+
     m_deviceInfo.iChannelCount = iChannelCount;
     if (iChannelCount > 0)
     {
@@ -290,28 +277,6 @@ int CPUSessionBase::Login(int through, int lat, int lng)
                     ++channelIndex;
                 }
             }
-            for (int i = 0; i < MAX_GPS_CHANNEL_COUNT; ++i)
-            {
-                if (m_GPSChannels[i] != NULL)
-                {
-                    memset(&pChannelList[channelIndex], 0x00, sizeof(pChannelList[channelIndex]));
-                    pChannelList[channelIndex].iChannelIndex = m_GPSChannels[i]->GetChannelIndex();
-                    pChannelList[channelIndex].iMediaDir = m_GPSChannels[i]->GetSupportMediaDir();
-                    strncpy_s(pChannelList[channelIndex].szName, sizeof(pChannelList[0].szName), m_GPSChannels[i]->GetName(), _TRUNCATE);
-                    ++channelIndex;
-                }
-            }
-            for (int i = 0; i < MAX_TSP_CHANNEL_COUNT; ++i)
-            {
-                if (m_TSPChannels[i] != NULL)
-                {
-                    memset(&pChannelList[channelIndex], 0x00, sizeof(pChannelList[channelIndex]));
-                    pChannelList[channelIndex].iChannelIndex = m_TSPChannels[i]->GetChannelIndex();
-                    pChannelList[channelIndex].iMediaDir = m_TSPChannels[i]->GetSupportMediaDir();
-                    strncpy_s(pChannelList[channelIndex].szName, sizeof(pChannelList[0].szName), m_TSPChannels[i]->GetName(), _TRUNCATE);
-                    ++channelIndex;
-                }
-            }
             m_sesParam.stEntityInfo.iChannelCount = channelIndex;
             m_sesParam.stEntityInfo.pChannelList = pChannelList;
         }
@@ -323,10 +288,9 @@ int CPUSessionBase::Login(int through, int lat, int lng)
     m_sesParam.stEntityInfo.iLongitude = lng;
     m_sesParam.iKeepaliveInterval = 25 * 1000;
     BVCU_Result bvResult = BVCSP_Login(&m_session, &m_sesParam);
-    printf("Call BVCSP_login(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
-        , m_deviceInfo.szID, bvResult, m_session);
+    printf("Call BVCSP_login(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort, m_deviceInfo.szID, bvResult, m_session);
     if (pChannelList)
-        delete[]pChannelList;
+        delete[] pChannelList;
     if (BVCU_Result_FAILED(bvResult))
         m_bBusying = false;
     return bvResult;
@@ -337,8 +301,7 @@ int CPUSessionBase::Logout()
     {
         m_bBusying = true;
         BVCU_Result bvResult = BVCSP_Logout(m_session);
-        printf("Call BVCSP_Logout(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort
-            , m_deviceInfo.szID, bvResult, m_session);
+        printf("Call BVCSP_Logout(%s:%d %s) code:%d session:%p\n", m_sesParam.szServerAddr, m_sesParam.iServerPort, m_deviceInfo.szID, bvResult, m_session);
         m_bOnline = false;
         m_session = 0;
         if (BVCU_Result_FAILED(bvResult))
@@ -354,16 +317,16 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
     {
         BVCU_Event_Source eventAlarm;
         memset(&eventAlarm, 0x00, sizeof(eventAlarm));
-        eventAlarm.iEventType = alarmType;// BVCU_EVENT_TYPE_ALERTIN;
+        eventAlarm.iEventType = alarmType; // BVCU_EVENT_TYPE_ALERTIN;
         eventAlarm.iSubDevIdx = index;
         eventAlarm.iValue = value;
         eventAlarm.bEnd = bEnd;
         sprintf_s(eventAlarm.szKey, "PUSimulatorE_%lld", time(NULL));
         if (desc)
             strncpy_s(eventAlarm.szEventDesc, sizeof(eventAlarm.szEventDesc), desc, _TRUNCATE);
-        if (m_GPSChannels[0])
-        {  // 如果有GPS模块，获取当前定位。
-            const BVCU_PUCFG_GPSData* gps = m_GPSChannels[0]->OnGetGPSData();
+        if (m_GPSInterface.OnGetGPSData)
+        { // 如果有GPS模块，获取当前定位。
+            BVCU_PUCFG_GPSData* gps = m_GPSInterface.OnGetGPSData();
             if (gps)
             {
                 eventAlarm.iLongitude = gps->iLongitude;
@@ -372,8 +335,8 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
         }
         strncpy_s(eventAlarm.szDevID, sizeof(eventAlarm.szDevID), m_deviceInfo.szID, _TRUNCATE);
         {
-            time_t now = time(NULL);  // 时间应该也是从GPS设备中读取
-            tm* ptm = (tm*)gmtime(&now);  // 初特殊说明，网传的时间都是UTC时间。
+            time_t now = time(NULL);      // 时间应该也是从GPS设备中读取
+            tm* ptm = (tm*)gmtime(&now); // 初特殊说明，网传的时间都是UTC时间。
             eventAlarm.stTime.iYear = ptm->tm_year + 1900;
             eventAlarm.stTime.iMonth = ptm->tm_mon + 1;
             eventAlarm.stTime.iDay = ptm->tm_mday;
@@ -398,7 +361,8 @@ int CPUSessionBase::SendAlarm(int alarmType, int index, int value, int bEnd, con
 
 int CPUSessionBase::SendCommand(int iMethod, int iSubMethod, char* pTargetID, void* pData, void* pUserData)
 {
-    if (m_session) {
+    if (m_session)
+    {
         BVCSP_Command cmd;
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.iSize = sizeof(cmd);
@@ -406,10 +370,12 @@ int CPUSessionBase::SendCommand(int iMethod, int iSubMethod, char* pTargetID, vo
         cmd.iMethod = iMethod;
         cmd.iSubMethod = iSubMethod;
         cmd.pUserData = pUserData;
-        if (pTargetID) {
+        if (pTargetID)
+        {
             strncpy_s(cmd.szTargetID, sizeof(cmd.szTargetID), pTargetID, _TRUNCATE);
         }
-        if (pData) {
+        if (pData)
+        {
             cmd.stMsgContent.iDataCount = 1;
             cmd.stMsgContent.pData = pData;
         }
@@ -427,7 +393,8 @@ int CPUSessionBase::SendNotify(int iSubMethod, void* pData)
     notify.iSize = sizeof(notify);
     notify.stMsgContent.iSize = sizeof(notify.stMsgContent);
     notify.stMsgContent.iSubMethod = iSubMethod;
-    if (pData != NULL) {
+    if (pData != NULL)
+    {
         notify.stMsgContent.stMsgContent.iDataCount = 1;
         notify.stMsgContent.stMsgContent.pData = pData;
     }
@@ -435,7 +402,6 @@ int CPUSessionBase::SendNotify(int iSubMethod, void* pData)
     printf("Call BVCSP_SendNotify code:%d session:%p\n", bvResult, m_session);
     return bvResult;
 }
-
 
 CChannelBase* CPUSessionBase::GetChannelBase(int channelIndex)
 {
@@ -445,18 +411,6 @@ CChannelBase* CPUSessionBase::GetChannelBase(int channelIndex)
         int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_CHANNEL;
         if (index < MAX_AV_CHANNEL_COUNT)
             pChannel = m_avChannels[index];
-    }
-    else if (BVCU_SUBDEV_INDEXMAJOR_MIN_GPS <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_GPS)
-    {
-        int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_GPS;
-        if (index < MAX_GPS_CHANNEL_COUNT)
-            pChannel = m_GPSChannels[index];
-    }
-    else if (BVCU_SUBDEV_INDEXMAJOR_MIN_TSP <= channelIndex && channelIndex <= BVCU_SUBDEV_INDEXMAJOR_MAX_TSP)
-    {
-        int index = channelIndex - BVCU_SUBDEV_INDEXMAJOR_MIN_TSP;
-        if (index < MAX_TSP_CHANNEL_COUNT)
-            pChannel = m_TSPChannels[index];
     }
     return pChannel;
 }
@@ -511,10 +465,12 @@ void CPUSessionBase::OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_
         CChannelBase* pChannel = pSession->GetChannelBase(pDialogParam->stTarget.iIndexMajor);
         if (pChannel == 0 || pChannel->GetHDialog() != hDialog)
             return;
-        if (iEventCode == BVCSP_EVENT_DIALOG_OPEN) {
+        if (iEventCode == BVCSP_EVENT_DIALOG_OPEN)
+        {
             if (BVCU_Result_SUCCEEDED(pParam->iResult))
                 pChannel->OnOpen();
-            else {
+            else
+            {
                 pChannel->SetHialog(0, 0);
                 pChannel->OnClose();
             }
@@ -525,12 +481,12 @@ void CPUSessionBase::OnDialogEvent(BVCSP_HDialog hDialog, int iEventCode, BVCSP_
             pChannel->OnClose();
         }
         else if (iEventCode == BVCSP_EVENT_DIALOG_PLIKEY)
-        {   // 请求关键帧
+        { // 请求关键帧
             pChannel->OnPLI();
         }
     }
 }
-BVCU_Result CPUSessionBase::afterDialogRecv(BVCSP_HDialog hDialog, BVCSP_Packet* pPacket)
+BVCU_Result CPUSessionBase::OnAudioRecv(BVCSP_HDialog hDialog, BVCSP_Packet* pPacket)
 {
     BVCSP_DialogInfo info;
     if (BVCU_Result_SUCCEEDED(BVCSP_GetDialogInfo(hDialog, &info)))
@@ -569,26 +525,10 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
     if (pCommand->iMethod == BVCU_METHOD_QUERY)
     {
         if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPSDATA)
-        {   // 获取PU的GPS通道数据。输入类型：无；输出类型: BVCU_PUCFG_GPSData
-            int index = pCommand->iTargetIndex;
-            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+        { // 获取PU的GPS通道数据。输入类型：无；输出类型: BVCU_PUCFG_GPSData
+            if (pSession->m_GPSInterface.OnGetGPSData)
             {
-                const BVCU_PUCFG_GPSData* pParam = pSession->m_GPSChannels[index]->OnGetGPSData();
-                if (pParam)
-                {
-                    szResult.stContent.iDataCount = 1;
-                    szResult.stContent.pData = (void*)pParam;
-                    pCommand->OnEvent(hSession, pCommand, &szResult);
-                    return BVCU_RESULT_S_OK;
-                }
-            }
-        }
-        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
-        {   // 串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
-            int index = pCommand->iTargetIndex;
-            if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
-            {
-                const BVCU_PUCFG_SerialPort* pParam = pSession->m_TSPChannels[index]->OnGetTSPParam();
+                const BVCU_PUCFG_GPSData* pParam = pSession->m_GPSInterface.OnGetGPSData();
                 if (pParam)
                 {
                     szResult.stContent.iDataCount = 1;
@@ -599,11 +539,10 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPS)
-        {   // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
-            int index = pCommand->iTargetIndex;
-            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+        { // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
+            if (pSession->m_GPSInterface.OnGetGPSParam)
             {
-                const BVCU_PUCFG_GPSParam* pParam = pSession->m_GPSChannels[index]->OnGetGPSParam();
+                const BVCU_PUCFG_GPSParam* pParam = pSession->m_GPSInterface.OnGetGPSParam();
                 if (pParam)
                 {
                     szResult.stContent.iDataCount = 1;
@@ -614,7 +553,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_PTZATTR)
-        {   // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
+        { // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
             int index = pCommand->iTargetIndex;
             if (index < MAX_AV_CHANNEL_COUNT && pSession->m_avChannels[index] != 0)
             {
@@ -628,11 +567,36 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 }
             }
         }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_RECORDSTATUS)
+        { // 获取PU的录像状态。输入类型：无；输出类型: BVCU_PUCFG_RecordStatus
+            const BVCU_PUCFG_RecordStatus* pParam = pSession->OnGetRecordStatus();
+            if (pParam)
+            {
+                szResult.stContent.iDataCount = 1;
+                szResult.stContent.pData = (void*)pParam;
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
+            }
+        }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_SEARCH_LIST)
+        { // 获取 设备端存储文件列表
+            BVCU_Search_Request* req = (BVCU_Search_Request*)pCommand->stMsgContent.pData;
+            if (req->stSearchInfo.iType != BVCU_SEARCH_TYPE_FILE)
+                return BVCU_RESULT_E_UNSUPPORTED;
+            BVCU_Search_Response* pParam = pSession->OnGetRecordFiles((BVCU_Search_Request*)pCommand->stMsgContent.pData);
+            if (pParam)
+            {
+                szResult.stContent.iDataCount = 1;
+                szResult.stContent.pData = pParam;
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
+            }
+        }
     }
     else if (pCommand->iMethod == BVCU_METHOD_CONTROL)
     {
         if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_DEVICEINFO)
-        {   // 设备信息。输入类型：BVCU_PUCFG_DeviceInfo;输出类型：无
+        { // 设备信息。输入类型：BVCU_PUCFG_DeviceInfo;输出类型：无
             const BVCU_PUCFG_DeviceInfo* pParam = (BVCU_PUCFG_DeviceInfo*)pCommand->stMsgContent.pData;
             if (pParam)
             {
@@ -642,7 +606,7 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_CHANNELINFO)
-        {   // 某个PU的通道信息。输入类型：BVCU_PUCFG_PUChannelInfo；输出类型: 无；触发类型：同名Notify
+        { // 某个PU的通道信息。输入类型：BVCU_PUCFG_PUChannelInfo；输出类型: 无；触发类型：同名Notify
             const BVCU_PUCFG_PUChannelInfo* pParam = (BVCU_PUCFG_PUChannelInfo*)pCommand->stMsgContent.pData;
             if (pParam)
             {
@@ -655,36 +619,18 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 return BVCU_RESULT_S_OK;
             }
         }
-        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SERIALPORT)
-        {   // 串口属性。输入类型：BVCU_PUCFG_SerialPort;输出类型：无
-            int index = pCommand->iTargetIndex;
-            if (index < MAX_TSP_CHANNEL_COUNT && pSession->m_TSPChannels[index] != 0)
-            {
-                const BVCU_PUCFG_SerialPort* pParam = (BVCU_PUCFG_SerialPort*)pCommand->stMsgContent.pData;
-                if (pParam)
-                {
-                    szResult.iResult = pSession->m_TSPChannels[index]->OnSetTSPParam(pParam);
-                    pCommand->OnEvent(hSession, pCommand, &szResult);
-                    return BVCU_RESULT_S_OK;
-                }
-            }
-        }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_GPS)
-        {   // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
-            int index = pCommand->iTargetIndex;
-            if (index < MAX_GPS_CHANNEL_COUNT && pSession->m_GPSChannels[index] != 0)
+        { // GPS属性。输入类型：BVCU_PUCFG_GPSParam;输出类型：无
+            const BVCU_PUCFG_GPSParam* pParam = (BVCU_PUCFG_GPSParam*)pCommand->stMsgContent.pData;
+            if (pParam && pSession->m_GPSInterface.OnSetGPSParam)
             {
-                const BVCU_PUCFG_GPSParam* pParam = (BVCU_PUCFG_GPSParam*)pCommand->stMsgContent.pData;
-                if (pParam)
-                {
-                    szResult.iResult = pSession->m_GPSChannels[index]->OnSetGPSParam(pParam);
-                    pCommand->OnEvent(hSession, pCommand, &szResult);
-                    return BVCU_RESULT_S_OK;
-                }
+                szResult.iResult = pSession->m_GPSInterface.OnSetGPSParam(pParam);
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
             }
         }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_PTZCONTROL)
-        {   // 操作云台。输入类型：BVCU_PUCFG_PTZControl；输出类型：无
+        { // 操作云台。输入类型：BVCU_PUCFG_PTZControl；输出类型：无
             int index = pCommand->iTargetIndex;
             if (index < MAX_AV_CHANNEL_COUNT && pSession->m_avChannels[index] != 0)
             {
@@ -697,27 +643,46 @@ BVCU_Result CPUSessionBase::OnCommand(BVCSP_HSession hSession, BVCSP_Command* pC
                 }
             }
         }
-        if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SUBSCRIBE)
-        {   // 订阅/取消订阅 GPS。输入类型：BVCU_PUCFG_Subscribe;输出类型：无
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SUBSCRIBE)
+        { // 订阅/取消订阅 GPS。输入类型：BVCU_PUCFG_Subscribe;输出类型：无
             const BVCU_PUCFG_Subscribe* pParam = (BVCU_PUCFG_Subscribe*)pCommand->stMsgContent.pData;
-            if (pParam)
-            {
-                if (strcmpi("GPS", pParam->szType) == 0) {
-                    szResult.iResult = pSession->OnSubscribeGPS(pParam->bStart, pParam->iInterval);
-                    pCommand->OnEvent(hSession, pCommand, &szResult);
-                    return BVCU_RESULT_S_OK;
-                }
+            if (pParam && strcmpi("GPS", pParam->szType) == 0 && pSession->m_GPSInterface.OnSubscribeGPS)
+            { // 订阅GPS
+                szResult.iResult = pSession->m_GPSInterface.OnSubscribeGPS(pParam->bStart, pParam->iInterval);
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
             }
         }
+        else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_MANUALRECORD)
+        { // 手工启动/停止PU录像。输入类型：BVCU_PUCFG_ManualRecord；输出类型：无
+            const BVCU_PUCFG_ManualRecord* pParam = (BVCU_PUCFG_ManualRecord*)pCommand->stMsgContent.pData;
+            if (pParam)
+            {
+                szResult.iResult = pSession->OnManualRecord(pParam->bStart);
+                pCommand->OnEvent(hSession, pCommand, &szResult);
+                return BVCU_RESULT_S_OK;
+            }
+        }
+        // else if (pCommand->iSubMethod == BVCU_SUBMETHOD_PU_SNAPSHOT_ONE)
+        // { // 手动抓拍一张图片并上传。输入类型：无；输出类型：BVCU_Search_FileInfo；
+        //     BVCU_Search_Response *pParam = pSession->OnSnapshotOne();
+        //     if (pParam)
+        //     {
+        //         szResult.stContent.iDataCount = 1;
+        //         szResult.stContent.pData = pParam;
+        //         pCommand->OnEvent(hSession, pCommand, &szResult);// 这个地方应该异步处理
+        //         return BVCU_RESULT_S_OK;
+        //     }
+        // }
         else if (pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_START ||
             pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_PARTICIPATOR_ADD ||
             pCommand->iSubMethod == BVCU_SUBMETHOD_CONF_PARTICIPATOR_INVITE_SPEAK)
-        {   // 语音会议相关控制命令全部自动回OK
+        { // 语音会议相关控制命令全部自动回OK
             pCommand->OnEvent(hSession, pCommand, &szResult);
             return BVCU_RESULT_S_OK;
         }
     }
-    return BVCU_RESULT_E_FAILED;// 不接受这个命令处理
+    return BVCU_RESULT_E_FAILED; // 不接受这个命令处理
 }
 BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, BVCSP_DialogParam* pParam)
 {
@@ -740,7 +705,7 @@ BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, B
         {
             int iOldDir = pChannel->GetOpenDir();
             pChannel->SetHialog(hDialog, pParam->iAVStreamDir);
-            BVCU_Result iReuslt = pChannel->OnOpenRequest();
+            BVCU_Result iReuslt = pChannel->OnOpenRequest(pParam);
             if (BVCU_Result_FAILED(iReuslt))
             {
                 if (iEventCode == BVCSP_EVENT_DIALOG_OPEN)
@@ -751,17 +716,13 @@ BVCU_Result CPUSessionBase::OnDialogCmd(BVCSP_HDialog hDialog, int iEventCode, B
             }
             pParam->pUserData = pSession;
             pParam->OnEvent = OnDialogEvent;
-            pParam->afterRecv = afterDialogRecv;
-            if (pParam->stTarget.iIndexMajor <= BVCU_SUBDEV_INDEXMAJOR_MAX_CHANNEL)
-            {
+            pParam->afterRecv = OnAudioRecv;
+            if (iReuslt == BVCU_RESULT_S_PENDING)
                 pChannel->SetBOpening(true);
-                return BVCU_RESULT_S_PENDING;
-            }
-            else
-                return BVCU_RESULT_S_OK;
+            return iReuslt;
         }
     }
-    return BVCU_RESULT_E_FAILED;// 不接受这个命令处理
+    return BVCU_RESULT_E_FAILED; // 不接受这个命令处理
 }
 void CPUSessionBase::OnCommandBack(BVCSP_HSession hSession, BVCSP_Command* pCommand, BVCSP_Event_SessionCmd* pParam)
 {

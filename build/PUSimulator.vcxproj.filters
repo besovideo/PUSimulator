@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="base">
+      <UniqueIdentifier>{22b4b5e2-cd60-440b-b064-817218677ceb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="function">
+      <UniqueIdentifier>{c24a8966-9e64-4735-aa0e-fcec8d138b8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{271d9357-ed08-4b02-9cdc-59c0d0e54783}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simulator">
+      <UniqueIdentifier>{23ae1984-077f-45cd-b162-bde65f9a79b6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\base\dialog.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\filetransfer.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\session.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\bv_auth.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\function\bv.cpp">
+      <Filter>function</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\utils.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\simulator\config.cpp">
+      <Filter>simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\cfile.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\simulator\gps.cpp">
+      <Filter>simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\simulator\media.cpp">
+      <Filter>simulator</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\base\dialog.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\filetransfer.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\session.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bv_auth.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\function\bv.h">
+      <Filter>function</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\utils.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\simulator\config.h">
+      <Filter>simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\cfile.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\simulator\gps.h">
+      <Filter>simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\simulator\media.h">
+      <Filter>simulator</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

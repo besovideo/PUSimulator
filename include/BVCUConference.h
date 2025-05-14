@@ -62,6 +62,7 @@ enum {
     BVCU_CONF_PARTICIPATOR_STATUS_ONLINE_LEAVED,//上线，但临时离开会议。这种情况下participator不可发言，也听不到其他人的发言
     BVCU_CONF_PARTICIPATOR_STATUS_ONLINE_INSEAT,//上线，并且正在参与会议
     BVCU_CONF_PARTICIPATOR_STATUS_ONLINE_SPEAKING,//上线，并且正在发言。只对BVCU_CONF_MODE_SPEAK_CHAIRMAN有效
+    BVCU_CONF_PARTICIPATOR_STATUS_ONLINE_WAITJOIN // 待加入，已加入但是没有建立通道
 };
 //集群成员的会议标签
 enum {
