@@ -204,7 +204,7 @@ int CPUSessionBase::UploadFile(BVCU_File_HTransfer* phTransfer, const char* loca
         cspParam.stFileTarget.pFileInfoJson = fileInfoJson;
 
         const char* pFileName = extract_filename(pFileTransfer->GetParam()->pLocalFilePathName); // 这里的pLocalFilePathName是utf8编码
-        struct tm* timeinfo = localtime(&fileInfo->starttime);
+        struct tm* timeinfo = localtime((time_t *)&fileInfo->starttime);
         sprintf(remotePath, "/%s/%s/%d%02d%02d/%s", m_deviceInfo.szID, fileInfo->filetype,
             timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, pFileName);
         cspParam.stFileTarget.pPathFileName = remotePath;

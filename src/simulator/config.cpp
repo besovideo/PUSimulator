@@ -114,7 +114,7 @@ void LoadConfig(PUConfig* pConfig)
     pConfig->relogin = 0;
     pConfig->lat = 200 * 10000000;
     pConfig->lng = 200 * 10000000;
-    pConfig->satellite = 2;
+    pConfig->satelliete = 2;
     pConfig->interval = DEFAULT_GPS_INTERVAL;
     pConfig->bandwidth = 0;
 }

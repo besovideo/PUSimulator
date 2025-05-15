@@ -14,6 +14,9 @@
 
 #ifdef _MSC_VER
 #include <windows.h>
+#else
+#include <csignal>
+#include <cstdlib>
 #endif
 
 #ifdef _WIN64

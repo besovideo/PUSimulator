@@ -36,10 +36,15 @@ INCLUDE      += -I../src/base
 LDFLAGS		 += -L./$(PLATFORM)/lib
 LIBS         += -lm -lpthread -lstdc++ -ldl -lprotobuf-lite -lbvrtc -lBVCSP
 
-CXXSRC       +=  ../src/auth/bv_auth.cpp
-CXXSRC       +=  ../src/base/dialog.cpp  ../src/base/filetransfer.cpp    ../src/base/session.cpp
-CXXSRC       +=  ../src/auth.cpp  ../src/config.cpp  ../src/file.cpp  ../src/gps.cpp   ../src/media.cpp
-CXXSRC       +=  ../src/pusession.cpp  ../src/tsp.cpp  ../src/utils.cpp  ../src/main.cpp
+#CXXSRC       +=  ../src/auth/bv_auth.cpp
+#CXXSRC       +=  ../src/base/dialog.cpp  ../src/base/filetransfer.cpp    ../src/base/session.cpp
+#CXXSRC       +=  ../src/auth.cpp  ../src/config.cpp  ../src/file.cpp  ../src/gps.cpp   ../src/media.cpp
+#CXXSRC       +=  ../src/pusession.cpp  ../src/tsp.cpp  ../src/utils.cpp  ../src/main.cpp
+
+CXXSRC       +=  ../src/utils/utils.cpp
+CXXSRC       +=  ../src/base/bv_auth.cpp  ../src/base/cfile.cpp  ../src/base/dialog.cpp  ../src/base/filetransfer.cpp  ../src/base/session.cpp
+CXXSRC       +=  ../src/function/bv.cpp
+CXXSRC       +=  ../src/simulator/config.cpp  ../src/simulator/gps.cpp  ../src/simulator/media.cpp ../src/main.cpp
  
 OBJS          = $(CXXSRC:.cpp=.o) 
 BIN           = $(TGT)

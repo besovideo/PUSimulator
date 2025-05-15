@@ -99,6 +99,7 @@ typedef pthread_mutex_t        bvcu_mutex_t;
 #define bvcu_mutex_lock     pthread_mutex_lock
 #define bvcu_mutex_trylock  !pthread_mutex_trylock
 #define bvcu_mutex_unlock   pthread_mutex_unlock
+#define BOOL bool
 typedef struct
 {
     BOOL state;

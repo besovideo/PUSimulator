@@ -44,9 +44,9 @@ PUSimulator.exe 是开放源码的，具体依赖的运行环境，需要根据�
 BVCSP是收费库，需要认证后，才能上线服务器。认证需要联系销售人员（需提供auth_code，见打印输出）。
 
 ### 设备端开发流程
-刚接触bvcsp库设备开发者，**不用关心bvcsp库和base里的接口，只需要看main.cpp中的源码**。
+刚接触bvcsp库设备开发者，**不用关心bvcsp库和base里的接口，只需要看main.cpp中的源码。**
 **保留base，function目录中文件不用修改.按目录结构拷贝到您的项目中。**
-**simulator目录中为模拟音视频+GPS数据源代码, 供参考，不用保留**。
+**simulator目录中为模拟音视频+GPS数据源代码, 供参考，不用保留。**
 **main.cpp中为具体需要看懂，并修改的代码，拷贝一份到您的项目中修改。**
 参考main.cpp中源码，实现：
 
@@ -60,45 +60,45 @@ BVCSP是收费库，需要认证后，才能上线服务器。认证需要联系
 BVCSP是收费库，需要认证后，才能上线服务器。认证需要联系销售人员（需提供auth_code）。  
 认证相关代码在 main.cpp中，需要您做如下修改：
 
-* 修改**APP_ID,APP_N,APP_E** 为您申请的开发者密钥信息（需要联系销售人员分配）。
-* 修改**PU_ID**为您根据硬件信息自动生成的设备ID（不能和其它设备冲突），格式为PU_%X
-* 修改**my_auth_inf()**函数，填写您的真实设备硬件信息。
+* 修改 **APP_ID,APP_N,APP_E** 为您申请的开发者密钥信息（需要联系销售人员分配）。
+* 修改 **PU_ID** 为您根据硬件信息自动生成的设备ID（不能和其它设备冲突），格式为PU_%X
+* 修改 **my_auth_inf()** 函数，填写您的真实设备硬件信息。
 > 相同的硬件信息会被认为是同一台设备，认证信息绑定硬件信息，同一个硬件信息平台同时只允许一个有效。
 
 #### 上线/下线服务器
-修改main.cpp文件**main()函数**中登录服务器的**地址，端口**等参数。
+修改main.cpp文件 **main()函数** 中登录服务器的 **地址，端口** 等参数。
 
 #### 实时音视频
-如果**不支持实时音视频，只需要修改InitBVLib的channelParam为NULL**。
+如果 **不支持实时音视频，只需要修改InitBVLib的channelParam为NULL。**
 音视频相关功能实现可以参考simulator/media.cpp中从文件中读取音视频帧并发送。
 
 修改main.cpp中以下代码：
-* **main()**中对**channelParam**参数的填写：**视频、音频的编码信息**（如果有）,**是否支持对讲**等参数；
-* 实现**OpenMedia()**接口，用于根据请求的媒体类型打开采集+编码，将音视频帧数据通过SendAudioData()/SendVideoData()接口发送给平台，参考simulator/media.cpp中实现。
-* 实现**CloseMedia()**接口，用于关闭所有采集+编码，不再发送音视频数据。
-* 实现**ReqPLI()**接口，用于通知编码器产生关键帧。
-* **如果支持对讲， 实现OnRecvAudio()**接口，用于播放来自平台的音频。
-*  **如果支持云台，实现OnPTZCtrl()**接口，用于响应云台控制命令。
+* **main()** 中对 **channelParam** 参数的填写： **视频、音频的编码信息** （如果有）, **是否支持对讲** 等参数；
+* 实现 **OpenMedia()** 接口，用于根据请求的媒体类型打开采集+编码，将音视频帧数据通过SendAudioData()/SendVideoData()接口发送给平台，参考simulator/media.cpp中实现。
+* 实现 **CloseMedia()** 接口，用于关闭所有采集+编码，不再发送音视频数据。
+* 实现 **ReqPLI()** 接口，用于通知编码器产生关键帧。
+* **如果支持对讲， 实现OnRecvAudio()** 接口，用于播放来自平台的音频。
+*  **如果支持云台，实现OnPTZCtrl()** 接口，用于响应云台控制命令。
 
 #### GPS 
-如果**不支持GPS定位，只需要修改InitBVLib的gpsParam为NULL**。
+如果 **不支持GPS定位，只需要修改InitBVLib的gpsParam为NULL。**
 如果支持GPS定位，请参考下面的实现步骤。
 GPS相关功能实现可以参考simulator/gps.cpp中模拟生成定位数据。
 
 修改main.cpp中以下代码：
-*  修改**main()**中对**gpsParam**参数的填写，**正常情况下不需要改动**。
-*  修改**OnSubscribeGPS()/OnGetGPSData()/OnGetGPSParam()**接口实现，**正常情况下不需要改动**。
-* 修改**GPSInterval**参数初始值，**建议根据设备应用场景改为一个合适的上报间隔**。
-* **建议修改OnSetGPSParam()**实现，将后台配置的**GPSInterval保存到文件**。
-* **必须实现GetGPSData()**接口，用于获取最新GPS定位数据。
+*  修改 **main()** 中对 **gpsParam** 参数的填写， **正常情况下不需要改动。**
+*  修改 **OnSubscribeGPS()/OnGetGPSData()/OnGetGPSParam()** 接口实现， **正常情况下不需要改动。**
+* 修改 **GPSInterval** 参数初始值， **建议根据设备应用场景改为一个合适的上报间隔。**
+* **建议修改OnSetGPSParam()** 实现，将后台配置的 **GPSInterval保存到文件。**
+* **必须实现GetGPSData()** 接口，用于获取最新GPS定位数据。
 
 #### 录像文件
 录像文件传输相关功能（读写）都已经封装在base中，不要开发者关心。开发者需要维护好录像文件列表，将main.cpp中获取文件列表和文件详情相关接口重新实现。支持了文件相关接口，便支持了平台的在线回放功能。
-如果**不支持音视频录像文件，只需要修改InitBVLib的fileParam为NULL**。
+如果 **不支持音视频录像文件，只需要修改InitBVLib的fileParam为NULL。**
 
 修改main.cpp中以下代码支持录像文件：
-* 修改**main()**中**fileParam.iBandwidthLimit**参数，用于限制文件传输速率。
-* 修改**OnGetRecordFiles()**文件检索接口，根据过滤条件返回真实的文件列表。
-* 修改**OnFileRequest()**文件下载请求接口，根据文件路径返回真实的文件信息。
-* 修改**OnGetRecordStatus()**获取录像状态接口，返回当前真实的录像状态。
-* 修改**OnManualRecord()**手动开始/停止录像接口，根据命令要求，开始或停止 手动录像（不应影响定时/报警等录像逻辑）。
+* 修改 **main()** 中 **fileParam.iBandwidthLimit** 参数，用于限制文件传输速率。
+* 修改 **OnGetRecordFiles()** 文件检索接口，根据过滤条件返回真实的文件列表。
+* 修改 **OnFileRequest()** 文件下载请求接口，根据文件路径返回真实的文件信息。
+* 修改 **OnGetRecordStatus()** 获取录像状态接口，返回当前真实的录像状态。
+* 修改 **OnManualRecord()** 手动开始/停止录像接口，根据命令要求，开始或停止 手动录像（不应影响定时/报警等录像逻辑）。
